@@ -81,6 +81,7 @@ export default function OfferList() {
           const data = doc.data();
           return {
             id: doc.id,
+            jobId: jobId, // Add the missing jobId property
             contractorId: data.contractorId,
             contractorName: data.contractorName,
             message: data.message,

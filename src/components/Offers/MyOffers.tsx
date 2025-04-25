@@ -50,9 +50,10 @@ export default function MyOffers() {
             const data = doc.data();
             return {
               id: doc.id,
-              jobId,
+              jobId: jobId,
               jobTitle: jobMap.get(jobId).title,
               contractorId: data.contractorId,
+              contractorName: data.contractorName || currentUserData.email, // Add missing property
               message: data.message,
               price: data.price,
               status: data.status,

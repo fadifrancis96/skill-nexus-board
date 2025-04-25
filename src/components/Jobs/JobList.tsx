@@ -46,14 +46,14 @@ export default function JobList({ filter = "all", userId }: JobListProps) {
           const data = doc.data();
           return {
             id: doc.id,
-            title: data.title,
-            description: data.description,
-            location: data.location,
+            title: data.title as string,
+            description: data.description as string,
+            location: data.location as string,
             datePosted: data.datePosted.toDate(),
-            createdBy: data.createdBy,
-            status: data.status,
-            category: data.category,
-            budget: data.budget,
+            createdBy: data.createdBy as string,
+            status: data.status as 'open' | 'in_progress' | 'completed',
+            category: data.category as string | undefined,
+            budget: data.budget as number | undefined,
           };
         });
         
