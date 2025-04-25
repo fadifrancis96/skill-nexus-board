@@ -20,7 +20,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
-import { Image, Upload } from "lucide-react";
+import { Image, Upload, X } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -69,6 +71,7 @@ export default function JobForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const form = useForm<FormData>({
@@ -88,24 +91,33 @@ export default function JobForm() {
       return [];
     }
     
+    setUploadProgress(0);
+    setUploadError(null);
     console.log(`Starting upload of ${files.length} photos`);
+    
     const storage = getStorage();
-    const uploadPromises = files.map(async (file, index) => {
+    const urls: string[] = [];
+    
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       try {
-        console.log(`Uploading file ${index + 1}/${files.length}: ${file.name}`);
+        console.log(`Uploading file ${i + 1}/${files.length}: ${file.name}`);
         const storageRef = ref(storage, `jobs/${Date.now()}-${file.name}`);
+        
         await uploadBytes(storageRef, file);
         const url = await getDownloadURL(storageRef);
-        console.log(`Successfully uploaded file ${index + 1}: ${file.name}`);
-        setUploadProgress(Math.round(((index + 1) / files.length) * 100));
-        return url;
+        
+        urls.push(url);
+        console.log(`Successfully uploaded file ${i + 1}: ${file.name}`);
+        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
       } catch (error) {
         console.error(`Error uploading file ${file.name}:`, error);
+        setUploadError(`Failed to upload ${file.name}. Please try again.`);
         throw error;
       }
-    });
+    }
     
-    return Promise.all(uploadPromises);
+    return urls;
   };
 
   const onSubmit = async (data: FormData) => {
@@ -120,6 +132,7 @@ export default function JobForm() {
 
     setIsSubmitting(true);
     setUploadProgress(0);
+    setUploadError(null);
     console.log("Starting job creation process");
 
     try {
@@ -136,8 +149,14 @@ export default function JobForm() {
             title: "Uploading photos",
             description: "Please wait while we upload your photos",
           });
+          
           photoUrls = await uploadPhotos(selectedFiles);
           console.log("Photo URLs after upload:", photoUrls);
+          
+          toast({
+            title: "Photos uploaded",
+            description: `Successfully uploaded ${photoUrls.length} photos`,
+          });
         } catch (uploadError) {
           console.error("Error during photo upload:", uploadError);
           toast({
@@ -151,6 +170,11 @@ export default function JobForm() {
       }
 
       // Create job document
+      toast({
+        title: "Creating job",
+        description: "Saving your job posting...",
+      });
+      
       console.log("Creating job document in Firestore");
       const jobData = {
         title: data.title,
@@ -211,6 +235,22 @@ export default function JobForm() {
     console.log("Files selected:", fileArray.map(f => `${f.name} (${f.size} bytes)`));
     setSelectedFiles(fileArray);
     form.setValue("photos", files);
+    setUploadError(null);
+  };
+
+  const removeFile = (index: number) => {
+    const newFiles = [...selectedFiles];
+    newFiles.splice(index, 1);
+    setSelectedFiles(newFiles);
+    
+    // Create a new DataTransfer
+    const dataTransfer = new DataTransfer();
+    newFiles.forEach(file => {
+      dataTransfer.items.add(file);
+    });
+    
+    // Update the form value
+    form.setValue("photos", dataTransfer.files);
   };
 
   return (
@@ -306,16 +346,28 @@ export default function JobForm() {
                       />
                       <Upload className="text-gray-500" />
                     </div>
+                    
                     {selectedFiles.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
+                      <div className="flex flex-wrap gap-2 p-2 border rounded-md">
                         {selectedFiles.map((file, index) => (
-                          <div key={index} className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <div 
+                            key={index} 
+                            className="flex items-center gap-1 bg-muted px-3 py-1 rounded-full text-sm"
+                          >
                             <Image className="w-4 h-4" />
-                            {file.name}
+                            <span className="truncate max-w-[150px]">{file.name}</span>
+                            <button 
+                              type="button" 
+                              onClick={() => removeFile(index)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
                         ))}
                       </div>
                     )}
+                    
                     <p className="text-sm text-muted-foreground">
                       Maximum 3 photos, each less than 5MB. Supported formats: JPG, PNG, WebP
                     </p>
@@ -326,12 +378,16 @@ export default function JobForm() {
             )}
           />
           
-          {uploadProgress > 0 && uploadProgress < 100 && (
-            <div className="w-full bg-gray-200 rounded-full h-2.5">
-              <div 
-                className="bg-primary h-2.5 rounded-full" 
-                style={{ width: `${uploadProgress}%` }}
-              ></div>
+          {uploadError && (
+            <Alert variant="destructive">
+              <AlertDescription>{uploadError}</AlertDescription>
+            </Alert>
+          )}
+          
+          {uploadProgress > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Uploading photos: {uploadProgress}%</p>
+              <Progress value={uploadProgress} className="h-2" />
             </div>
           )}
           
