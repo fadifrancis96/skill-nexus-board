@@ -5,7 +5,8 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface Chat {
   id: string;
@@ -27,6 +28,7 @@ interface ChatListProps {
 export default function ChatList({ onSelectChat, selectedChatId }: ChatListProps) {
   const { currentUser } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!currentUser) return;
@@ -48,8 +50,21 @@ export default function ChatList({ onSelectChat, selectedChatId }: ChatListProps
     return () => unsubscribe();
   }, [currentUser]);
 
+  const goToJobs = () => {
+    navigate("/jobs");
+  };
+
   return (
     <div className="space-y-4">
+      <Button 
+        onClick={goToJobs} 
+        className="w-full mb-4"
+        variant="outline"
+      >
+        <Users className="mr-2" />
+        Browse Jobs to Chat
+      </Button>
+      
       {chats.map((chat) => (
         <Card 
           key={chat.id}
@@ -75,8 +90,11 @@ export default function ChatList({ onSelectChat, selectedChatId }: ChatListProps
       ))}
       
       {chats.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <p>No chats yet</p>
+        <div className="text-center py-8 space-y-4">
+          <p className="text-muted-foreground">No chats yet</p>
+          <p className="text-sm text-muted-foreground">
+            Visit the jobs page to find job listings and start a conversation
+          </p>
         </div>
       )}
     </div>

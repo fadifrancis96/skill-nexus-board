@@ -3,6 +3,7 @@ import { useState } from "react";
 import AppLayout from "@/components/Layout/AppLayout";
 import ChatList from "@/components/Chat/ChatList";
 import ChatMessages from "@/components/Chat/ChatMessages";
+import { MessageCircle } from "lucide-react";
 
 export default function ChatPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
@@ -24,9 +25,13 @@ export default function ChatPage() {
             {selectedChatId ? (
               <ChatMessages chatId={selectedChatId} />
             ) : (
-              <div className="h-[500px] flex items-center justify-center border rounded-lg bg-background">
-                <p className="text-muted-foreground">
+              <div className="h-[500px] flex flex-col items-center justify-center border rounded-lg bg-background">
+                <MessageCircle size={48} className="text-muted-foreground mb-4" />
+                <p className="text-muted-foreground text-lg mb-2">
                   Select a chat to start messaging
+                </p>
+                <p className="text-sm text-muted-foreground text-center max-w-md">
+                  Browse jobs and message job posters to discuss opportunities, or select an existing conversation from the list.
                 </p>
               </div>
             )}
