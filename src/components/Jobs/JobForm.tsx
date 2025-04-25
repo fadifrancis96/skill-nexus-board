@@ -1,4 +1,3 @@
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -37,7 +36,7 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 export default function JobForm() {
-  const { currentUser, currentUserData } = useAuth();
+  const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
 
@@ -53,7 +52,7 @@ export default function JobForm() {
   });
 
   const onSubmit = async (data: FormData) => {
-    if (!currentUser || !currentUserData) {
+    if (!currentUser) {
       toast({
         title: "Error",
         description: "You must be logged in to post a job",
@@ -62,18 +61,12 @@ export default function JobForm() {
       return;
     }
 
-    if (currentUserData.role !== "job_poster") {
-      toast({
-        title: "Error",
-        description: "Only job posters can create jobs",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
+      const userId = currentUser.uid;
+      console.log("Creating job with user ID:", userId);
+
       await addDoc(collection(db, "jobs"), {
         title: data.title,
         description: data.description,
@@ -81,7 +74,7 @@ export default function JobForm() {
         budget: data.budget ? parseFloat(data.budget) : null,
         category: data.category || null,
         datePosted: new Date(),
-        createdBy: currentUser.uid,
+        createdBy: userId,
         status: "open",
       });
 

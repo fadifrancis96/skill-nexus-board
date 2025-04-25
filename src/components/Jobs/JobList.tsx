@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, orderBy, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -39,20 +40,21 @@ export default function JobList({ filter = "all", userId }: JobListProps) {
         let jobsQuery;
         
         if (filter === "my-jobs" && userId) {
+          console.log("Fetching jobs for user ID:", userId);
+          // Using a simple query without orderBy to avoid index issues
           jobsQuery = query(
             collection(db, "jobs"),
-            where("createdBy", "==", userId),
-            orderBy("datePosted", "desc")
+            where("createdBy", "==", userId)
           );
         } else {
           jobsQuery = query(
             collection(db, "jobs"),
-            where("status", "==", "open"),
-            orderBy("datePosted", "desc")
+            where("status", "==", "open")
           );
         }
         
         const jobsSnapshot = await getDocs(jobsQuery);
+        console.log(`Found ${jobsSnapshot.docs.length} jobs`);
         
         const jobsData = jobsSnapshot.docs.map((doc) => {
           const data = doc.data() as JobData;
@@ -61,7 +63,7 @@ export default function JobList({ filter = "all", userId }: JobListProps) {
             title: data.title,
             description: data.description,
             location: data.location,
-            datePosted: data.datePosted.toDate(),
+            datePosted: data.datePosted?.toDate() || new Date(),
             createdBy: data.createdBy,
             status: data.status,
             category: data.category,
