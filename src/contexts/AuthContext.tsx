@@ -80,12 +80,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         userData.displayName = displayName;
       }
 
-      await setDoc(doc(db, "users", user.uid), userData);
-      
-      toast({
-        title: "Account created",
-        description: "You have successfully registered",
-      });
+      try {
+        await setDoc(doc(db, "users", user.uid), userData);
+        
+        toast({
+          title: "Account created",
+          description: "You have successfully registered",
+        });
+      } catch (error: any) {
+        console.error("Error saving user data:", error);
+        // If we can't save the user data, we should still let the error propagate
+        // but provide a more specific message
+        toast({
+          title: "Registration incomplete",
+          description: "Your account was created but we couldn't save your profile. Please contact support.",
+          variant: "destructive",
+        });
+        
+        // Wrap the original error with more context
+        const enhancedError = new Error(`Failed to save user data: ${error.message || error}`);
+        throw enhancedError;
+      }
     } catch (error: any) {
       console.error("Error registering:", error);
       toast({

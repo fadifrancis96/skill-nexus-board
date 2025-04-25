@@ -25,6 +25,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { UserRole } from "@/types";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address" }),
@@ -44,6 +46,7 @@ type FormData = z.infer<typeof formSchema>;
 export default function RegisterForm() {
   const { register: registerUser } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const form = useForm<FormData>({
@@ -58,6 +61,7 @@ export default function RegisterForm() {
 
   const onSubmit = async (data: FormData) => {
     setIsLoading(true);
+    setError(null);
     try {
       await registerUser(
         data.email,
@@ -66,8 +70,13 @@ export default function RegisterForm() {
         data.displayName
       );
       navigate("/dashboard");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Registration error:", error);
+      if (error.message?.includes("permission-denied") || error.message?.includes("insufficient permissions")) {
+        setError("Registration failed due to permission issues. Please contact the administrator.");
+      } else {
+        setError(error.message || "Registration failed. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +92,12 @@ export default function RegisterForm() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}
