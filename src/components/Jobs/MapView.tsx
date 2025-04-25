@@ -123,6 +123,14 @@ const MapView: React.FC<MapViewProps> = ({ jobs }) => {
   }, [jobs, hasApiKey]);
   
   const handleSubmitApiKey = () => {
+    // Add validation for API key format
+    const apiKeyRegex = /^pk\.[a-zA-Z0-9]+\.[a-zA-Z0-9]+$/;
+    
+    if (!apiKeyRegex.test(apiKey)) {
+      alert('Please enter a valid Mapbox public access token');
+      return;
+    }
+
     localStorage.setItem('mapbox_key', apiKey);
     setHasApiKey(true);
   };
