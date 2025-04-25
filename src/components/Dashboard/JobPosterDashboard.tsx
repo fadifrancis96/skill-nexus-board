@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job, Offer } from "@/types";
@@ -9,21 +8,20 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export default function JobPosterDashboard() {
-  const { currentUserData } = useAuth();
+  const { currentUser } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [pendingOffers, setPendingOffers] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchJobs = async () => {
-      if (!currentUserData?.id) return;
+      if (!currentUser?.uid) return;
 
       setLoading(true);
       try {
         const jobsQuery = query(
           collection(db, "jobs"),
-          where("createdBy", "==", currentUserData.id),
-          orderBy("datePosted", "desc")
+          where("createdBy", "==", currentUser.uid)
         );
         
         const jobsSnapshot = await getDocs(jobsQuery);
@@ -34,7 +32,6 @@ export default function JobPosterDashboard() {
         for (const doc of jobsSnapshot.docs) {
           const jobData = doc.data();
           
-          // Get offers count
           const offersQuery = query(
             collection(db, `jobs/${doc.id}/offers`),
             where("status", "==", "pending")
@@ -49,13 +46,15 @@ export default function JobPosterDashboard() {
             title: jobData.title,
             description: jobData.description,
             location: jobData.location,
-            datePosted: jobData.datePosted.toDate(),
+            datePosted: jobData.datePosted?.toDate() || new Date(),
             createdBy: jobData.createdBy,
             status: jobData.status,
             category: jobData.category,
             budget: jobData.budget,
           });
         }
+        
+        jobsData.sort((a, b) => b.datePosted.getTime() - a.datePosted.getTime());
         
         setJobs(jobsData);
         setPendingOffers(totalPendingOffers);
@@ -67,7 +66,7 @@ export default function JobPosterDashboard() {
     };
 
     fetchJobs();
-  }, [currentUserData]);
+  }, [currentUser]);
 
   const activeJobs = jobs.filter(
     (job) => job.status === "open" || job.status === "in_progress"

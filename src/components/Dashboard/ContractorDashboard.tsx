@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { Job, Offer } from "@/types";
@@ -9,22 +8,21 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 export default function ContractorDashboard() {
-  const { currentUserData } = useAuth();
+  const { currentUser } = useAuth();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [myOffers, setMyOffers] = useState<Array<Offer & { jobId: string, jobTitle: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (!currentUserData?.id) return;
+      if (!currentUser?.uid) return;
       
       setLoading(true);
       try {
-        // Fetch recent available jobs
+        // Fetch recent available jobs without orderBy
         const jobsQuery = query(
           collection(db, "jobs"),
           where("status", "==", "open"),
-          orderBy("datePosted", "desc"),
           limit(5)
         );
         
@@ -36,7 +34,7 @@ export default function ContractorDashboard() {
             title: data.title,
             description: data.description,
             location: data.location,
-            datePosted: data.datePosted.toDate(),
+            datePosted: data.datePosted?.toDate() || new Date(),
             createdBy: data.createdBy,
             status: data.status,
             category: data.category,
@@ -44,7 +42,12 @@ export default function ContractorDashboard() {
           };
         });
         
-        setRecentJobs(jobsData);
+        // Sort jobs manually by date
+        const sortedJobs = jobsData.sort((a, b) => 
+          b.datePosted.getTime() - a.datePosted.getTime()
+        );
+        
+        setRecentJobs(sortedJobs);
         
         // Fetch all jobs to find my offers
         const allJobsQuery = query(collection(db, "jobs"));
@@ -63,7 +66,7 @@ export default function ContractorDashboard() {
         const myOffersPromises = Array.from(jobMap.keys()).map(async (jobId) => {
           const offersQuery = query(
             collection(db, `jobs/${jobId}/offers`),
-            where("contractorId", "==", currentUserData.id)
+            where("contractorId", "==", currentUser.uid)
           );
           
           const offersSnapshot = await getDocs(offersQuery);
@@ -78,7 +81,7 @@ export default function ContractorDashboard() {
               message: offerData.message,
               price: offerData.price,
               status: offerData.status,
-              createdAt: offerData.createdAt.toDate(),
+              createdAt: offerData.createdAt?.toDate() || new Date(),
               contractorName: offerData.contractorName,
             };
           });
@@ -87,7 +90,12 @@ export default function ContractorDashboard() {
         const offersArrays = await Promise.all(myOffersPromises);
         const allOffers = offersArrays.flat();
         
-        setMyOffers(allOffers);
+        // Sort offers by date
+        const sortedOffers = allOffers.sort((a, b) => 
+          b.createdAt.getTime() - a.createdAt.getTime()
+        );
+        
+        setMyOffers(sortedOffers);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
       } finally {
@@ -96,7 +104,7 @@ export default function ContractorDashboard() {
     };
     
     fetchDashboardData();
-  }, [currentUserData]);
+  }, [currentUser]);
 
   const pendingOffers = myOffers.filter(offer => offer.status === 'pending').length;
   const acceptedOffers = myOffers.filter(offer => offer.status === 'accepted').length;
