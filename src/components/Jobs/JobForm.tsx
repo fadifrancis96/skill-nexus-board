@@ -68,6 +68,7 @@ export default function JobForm() {
   const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const navigate = useNavigate();
 
   const form = useForm<FormData>({
@@ -82,13 +83,26 @@ export default function JobForm() {
   });
 
   const uploadPhotos = async (files: File[]): Promise<string[]> => {
-    if (!files.length) return [];
+    if (!files.length) {
+      console.log("No files to upload");
+      return [];
+    }
     
+    console.log(`Starting upload of ${files.length} photos`);
     const storage = getStorage();
-    const uploadPromises = files.map(async (file) => {
-      const storageRef = ref(storage, `jobs/${Date.now()}-${file.name}`);
-      await uploadBytes(storageRef, file);
-      return getDownloadURL(storageRef);
+    const uploadPromises = files.map(async (file, index) => {
+      try {
+        console.log(`Uploading file ${index + 1}/${files.length}: ${file.name}`);
+        const storageRef = ref(storage, `jobs/${Date.now()}-${file.name}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        console.log(`Successfully uploaded file ${index + 1}: ${file.name}`);
+        setUploadProgress(Math.round(((index + 1) / files.length) * 100));
+        return url;
+      } catch (error) {
+        console.error(`Error uploading file ${file.name}:`, error);
+        throw error;
+      }
     });
     
     return Promise.all(uploadPromises);
@@ -105,12 +119,40 @@ export default function JobForm() {
     }
 
     setIsSubmitting(true);
+    setUploadProgress(0);
+    console.log("Starting job creation process");
 
     try {
       const userId = currentUser.uid;
-      const photoUrls = await uploadPhotos(selectedFiles);
+      console.log("Current user ID:", userId);
+      
+      // Upload photos if any
+      console.log("Selected files count:", selectedFiles.length);
+      let photoUrls: string[] = [];
+      
+      if (selectedFiles.length > 0) {
+        try {
+          toast({
+            title: "Uploading photos",
+            description: "Please wait while we upload your photos",
+          });
+          photoUrls = await uploadPhotos(selectedFiles);
+          console.log("Photo URLs after upload:", photoUrls);
+        } catch (uploadError) {
+          console.error("Error during photo upload:", uploadError);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload one or more photos",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
 
-      await addDoc(collection(db, "jobs"), {
+      // Create job document
+      console.log("Creating job document in Firestore");
+      const jobData = {
         title: data.title,
         description: data.description,
         location: data.location,
@@ -120,7 +162,12 @@ export default function JobForm() {
         datePosted: new Date(),
         createdBy: userId,
         status: "open",
-      });
+      };
+      
+      console.log("Job data to be saved:", jobData);
+      
+      const docRef = await addDoc(collection(db, "jobs"), jobData);
+      console.log("Job created with ID:", docRef.id);
 
       toast({
         title: "Job created",
@@ -128,15 +175,22 @@ export default function JobForm() {
       });
       
       navigate("/my-jobs");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating job:", error);
+      let errorMessage = "Failed to create job";
+      
+      if (error.message) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create job",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
+      setUploadProgress(0);
     }
   };
 
@@ -154,6 +208,7 @@ export default function JobForm() {
       return;
     }
     
+    console.log("Files selected:", fileArray.map(f => `${f.name} (${f.size} bytes)`));
     setSelectedFiles(fileArray);
     form.setValue("photos", files);
   };
@@ -270,6 +325,15 @@ export default function JobForm() {
               </FormItem>
             )}
           />
+          
+          {uploadProgress > 0 && uploadProgress < 100 && (
+            <div className="w-full bg-gray-200 rounded-full h-2.5">
+              <div 
+                className="bg-primary h-2.5 rounded-full" 
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          )}
           
           <Button 
             type="submit" 
