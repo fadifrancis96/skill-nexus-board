@@ -102,8 +102,9 @@ export default function JobDetail() {
       const existingChats = await getDocs(chatQuery);
       
       if (!existingChats.empty) {
-        // Chat exists, navigate to it
-        navigate(`/chat`);
+        // Chat exists, navigate to it with the chat ID
+        const chatId = existingChats.docs[0].id;
+        navigate(`/chat`, { state: { selectedChatId: chatId } });
         return;
       }
 
@@ -115,7 +116,7 @@ export default function JobDetail() {
         createdAt: new Date(),
       });
 
-      navigate(`/chat`);
+      navigate(`/chat`, { state: { selectedChatId: chatDoc.id } });
     } catch (error) {
       console.error("Error creating chat:", error);
       toast({

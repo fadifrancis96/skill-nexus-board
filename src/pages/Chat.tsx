@@ -1,12 +1,28 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import AppLayout from "@/components/Layout/AppLayout";
 import ChatList from "@/components/Chat/ChatList";
 import ChatMessages from "@/components/Chat/ChatMessages";
 import { MessageCircle } from "lucide-react";
 
+interface LocationState {
+  selectedChatId?: string;
+}
+
 export default function ChatPage() {
-  const [selectedChatId, setSelectedChatId] = useState<string | undefined>();
+  const location = useLocation();
+  const state = location.state as LocationState;
+  const [selectedChatId, setSelectedChatId] = useState<string | undefined>(
+    state?.selectedChatId
+  );
+
+  useEffect(() => {
+    // Update selected chat if we navigate with state
+    if (state?.selectedChatId) {
+      setSelectedChatId(state.selectedChatId);
+    }
+  }, [state?.selectedChatId]);
 
   return (
     <AppLayout>
