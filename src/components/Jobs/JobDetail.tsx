@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
@@ -13,7 +14,7 @@ import { MessageCircle } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
-  const { currentUserData } = useAuth();
+  const { currentUser, currentUserData } = useAuth();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [jobPosterName, setJobPosterName] = useState<string>("");
