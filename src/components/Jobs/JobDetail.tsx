@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
@@ -10,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import OfferForm from "@/components/Offers/OfferForm";
 import { Separator } from "@/components/ui/separator";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { MapPin } from "lucide-react";
 
 export default function JobDetail() {
@@ -22,7 +21,7 @@ export default function JobDetail() {
   const [jobPosterName, setJobPosterName] = useState<string>("");
   const [mapApiKey, setMapApiKey] = useState<string | null>(null);
   const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
+  const map = useRef<L.Map | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -89,28 +88,33 @@ export default function JobDetail() {
   }, [id, navigate]);
 
   useEffect(() => {
-    if (!mapApiKey || !job || !job.latitude || !job.longitude || !mapContainer.current) {
+    if (!job || !job.latitude || !job.longitude || !mapContainer.current) {
       return;
     }
-    
-    mapboxgl.accessToken = mapApiKey;
-    
-    if (map.current) {
-      map.current.remove();
+
+    // Initialize map if it doesn't exist
+    if (!map.current) {
+      map.current = L.map(mapContainer.current).setView([job.latitude, job.longitude], 13);
+      
+      // Add OpenStreetMap tiles
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map.current);
+      
+      // Add marker
+      L.marker([job.latitude, job.longitude], {
+        icon: L.divIcon({
+          className: 'bg-primary rounded-full w-4 h-4 -ml-2 -mt-2',
+          iconSize: [16, 16],
+        })
+      }).addTo(map.current);
     }
-    
-    map.current = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [job.longitude, job.latitude],
-      zoom: 13
-    });
-    
-    // Add marker
-    new mapboxgl.Marker({ color: '#F97316' })
-      .setLngLat([job.longitude, job.latitude])
-      .addTo(map.current);
-  }, [job, mapApiKey]);
+
+    return () => {
+      map.current?.remove();
+      map.current = null;
+    };
+  }, [job]);
 
   if (loading) {
     return (
@@ -192,17 +196,7 @@ export default function JobDetail() {
               {job.address && (
                 <p className="mb-4">{job.address}</p>
               )}
-              
-              {mapApiKey ? (
-                <div className="h-[300px] w-full rounded-lg overflow-hidden" ref={mapContainer}></div>
-              ) : (
-                <Card className="p-4 bg-muted">
-                  <p>To view the location on a map, please add your Mapbox API key in the Jobs Map view.</p>
-                  <Button variant="outline" className="mt-2" asChild>
-                    <Link to="/jobs-map">Go to Map View</Link>
-                  </Button>
-                </Card>
-              )}
+              <div className="h-[300px] w-full rounded-lg overflow-hidden" ref={mapContainer} />
             </div>
           )}
           
