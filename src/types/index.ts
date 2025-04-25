@@ -9,8 +9,6 @@ export interface User {
   createdAt: Date;
 }
 
-export type JobStatus = 'open' | 'in_progress' | 'completed';
-
 export interface Job {
   id: string;
   title: string;
@@ -18,19 +16,18 @@ export interface Job {
   location: string;
   datePosted: Date;
   createdBy: string;
-  status: JobStatus;
-  budget?: number;
+  status: 'open' | 'in_progress' | 'completed';
   category?: string;
+  budget?: number;
 }
-
-export type OfferStatus = 'pending' | 'accepted' | 'rejected';
 
 export interface Offer {
   id: string;
+  jobId: string;
   contractorId: string;
-  contractorName?: string;
+  contractorName: string;
   message: string;
   price: number;
-  status: OfferStatus;
+  status: 'pending' | 'accepted' | 'rejected';
   createdAt: Date;
 }

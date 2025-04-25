@@ -7,7 +7,7 @@ import {
   signOut as firebaseSignOut,
   onAuthStateChanged 
 } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, Timestamp } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
 import { User, UserRole } from "@/types";
 import { toast } from "@/hooks/use-toast";
@@ -43,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               ...userData,
               createdAt: userData.createdAt instanceof Date 
                 ? userData.createdAt 
-                : new Date(userData.createdAt.seconds * 1000) 
+                : (userData.createdAt as Timestamp).toDate()
             });
           } else {
             setCurrentUserData(null);
