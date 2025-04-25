@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, DocumentData } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Job } from "@/types";
 import { Link } from "react-router-dom";
@@ -12,6 +11,19 @@ import { Search } from "lucide-react";
 interface JobListProps {
   filter?: "my-jobs" | "all";
   userId?: string;
+}
+
+interface JobData extends DocumentData {
+  title: string;
+  description: string;
+  location: string;
+  datePosted: {
+    toDate: () => Date;
+  };
+  createdBy: string;
+  status: 'open' | 'in_progress' | 'completed';
+  category?: string;
+  budget?: number;
 }
 
 export default function JobList({ filter = "all", userId }: JobListProps) {
@@ -43,17 +55,17 @@ export default function JobList({ filter = "all", userId }: JobListProps) {
         const jobsSnapshot = await getDocs(jobsQuery);
         
         const jobsData = jobsSnapshot.docs.map((doc) => {
-          const data = doc.data();
+          const data = doc.data() as JobData;
           return {
             id: doc.id,
-            title: data.title as string,
-            description: data.description as string,
-            location: data.location as string,
+            title: data.title,
+            description: data.description,
+            location: data.location,
             datePosted: data.datePosted.toDate(),
-            createdBy: data.createdBy as string,
-            status: data.status as 'open' | 'in_progress' | 'completed',
-            category: data.category as string | undefined,
-            budget: data.budget as number | undefined,
+            createdBy: data.createdBy,
+            status: data.status,
+            category: data.category,
+            budget: data.budget,
           };
         });
         
