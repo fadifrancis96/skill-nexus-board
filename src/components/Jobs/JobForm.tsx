@@ -85,9 +85,33 @@ export default function JobForm() {
     },
   });
 
+  const uploadSinglePhoto = async (file: File, index: number, totalFiles: number): Promise<string> => {
+    try {
+      const storage = getStorage();
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `job_${Date.now()}_${index}.${fileExtension}`;
+      
+      // Use a simpler storage path with less special characters
+      const storageRef = ref(storage, `jobs/${fileName}`);
+      
+      console.log(`Starting upload of file: ${fileName}`);
+      await uploadBytes(storageRef, file);
+      console.log(`File uploaded, getting download URL for: ${fileName}`);
+      
+      const url = await getDownloadURL(storageRef);
+      console.log(`Successfully got URL for file: ${fileName}`);
+      
+      setUploadProgress(Math.round(((index + 1) / totalFiles) * 100));
+      
+      return url;
+    } catch (error: any) {
+      console.error(`Error uploading file ${file.name}:`, error);
+      throw new Error(`Failed to upload ${file.name}: ${error.message || 'Unknown error'}`);
+    }
+  };
+
   const uploadPhotos = async (files: File[]): Promise<string[]> => {
     if (!files.length) {
-      console.log("No files to upload");
       return [];
     }
     
@@ -95,29 +119,19 @@ export default function JobForm() {
     setUploadError(null);
     console.log(`Starting upload of ${files.length} photos`);
     
-    const storage = getStorage();
     const urls: string[] = [];
     
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      try {
-        console.log(`Uploading file ${i + 1}/${files.length}: ${file.name}`);
-        const storageRef = ref(storage, `jobs/${Date.now()}-${file.name}`);
-        
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const url = await uploadSinglePhoto(files[i], i, files.length);
         urls.push(url);
-        console.log(`Successfully uploaded file ${i + 1}: ${file.name}`);
-        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
-      } catch (error) {
-        console.error(`Error uploading file ${file.name}:`, error);
-        setUploadError(`Failed to upload ${file.name}. Please try again.`);
-        throw error;
       }
+      
+      return urls;
+    } catch (error: any) {
+      setUploadError(`Upload failed: ${error.message}`);
+      throw error;
     }
-    
-    return urls;
   };
 
   const onSubmit = async (data: FormData) => {
@@ -153,15 +167,17 @@ export default function JobForm() {
           photoUrls = await uploadPhotos(selectedFiles);
           console.log("Photo URLs after upload:", photoUrls);
           
-          toast({
-            title: "Photos uploaded",
-            description: `Successfully uploaded ${photoUrls.length} photos`,
-          });
-        } catch (uploadError) {
+          if (photoUrls.length > 0) {
+            toast({
+              title: "Photos uploaded",
+              description: `Successfully uploaded ${photoUrls.length} photos`,
+            });
+          }
+        } catch (uploadError: any) {
           console.error("Error during photo upload:", uploadError);
           toast({
             title: "Upload Error",
-            description: "Failed to upload one or more photos",
+            description: uploadError.message || "Failed to upload one or more photos",
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -212,6 +228,7 @@ export default function JobForm() {
         description: errorMessage,
         variant: "destructive",
       });
+      setIsSubmitting(false);
     } finally {
       setIsSubmitting(false);
       setUploadProgress(0);
