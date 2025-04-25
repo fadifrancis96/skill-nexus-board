@@ -19,7 +19,6 @@ import MyJobsPage from "./pages/Jobs/MyJobsPage";
 import JobOffersPage from "./pages/Jobs/JobOffersPage";
 import MyOffersPage from "./pages/Offers/MyOffersPage";
 import Unauthorized from "./pages/Unauthorized";
-import ChatPage from "./pages/Chat/ChatPage";
 
 const queryClient = new QueryClient();
 
@@ -95,15 +94,6 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRole={["contractor"]}>
                   <MyOffersPage />
-                </ProtectedRoute>
-              } 
-            />
-            
-            <Route 
-              path="/chat" 
-              element={
-                <ProtectedRoute>
-                  <ChatPage />
                 </ProtectedRoute>
               } 
             />

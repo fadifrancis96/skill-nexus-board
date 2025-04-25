@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Job } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import OfferForm from "@/components/Offers/OfferForm";
 import { Separator } from "@/components/ui/separator";
-import { MessageCircle } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -87,46 +86,6 @@ export default function JobDetail() {
   const isJobPoster = currentUserData?.id === job.createdBy;
   const isContractor = currentUserData?.role === "contractor";
 
-  const startChat = async () => {
-    if (!currentUser || !currentUserData || !job) return;
-
-    try {
-      // Check if chat already exists
-      const chatsRef = collection(db, "chats");
-      const chatQuery = query(
-        chatsRef,
-        where("jobId", "==", id),
-        where("participants", "array-contains", currentUser.uid)
-      );
-      
-      const existingChats = await getDocs(chatQuery);
-      
-      if (!existingChats.empty) {
-        // Chat exists, navigate to it with the chat ID
-        const chatId = existingChats.docs[0].id;
-        navigate(`/chat`, { state: { selectedChatId: chatId } });
-        return;
-      }
-
-      // Create new chat
-      const chatDoc = await addDoc(chatsRef, {
-        jobId: id,
-        jobTitle: job.title,
-        participants: [currentUser.uid, job.createdBy],
-        createdAt: new Date(),
-      });
-
-      navigate(`/chat`, { state: { selectedChatId: chatDoc.id } });
-    } catch (error) {
-      console.error("Error creating chat:", error);
-      toast({
-        title: "Error",
-        description: "Failed to start chat",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div>
       <div className="mb-6">
@@ -198,17 +157,7 @@ export default function JobDetail() {
             <CardTitle>Submit an Offer</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <OfferForm jobId={job.id} />
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={startChat}
-              >
-                <MessageCircle className="mr-2" />
-                Message Job Poster
-              </Button>
-            </div>
+            <OfferForm jobId={job.id} />
           </CardContent>
         </Card>
       )}
