@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -10,6 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import OfferForm from "@/components/Offers/OfferForm";
 import { Separator } from "@/components/ui/separator";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
+import { MapPin } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,7 +20,18 @@ export default function JobDetail() {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [jobPosterName, setJobPosterName] = useState<string>("");
+  const [mapApiKey, setMapApiKey] = useState<string | null>(null);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<mapboxgl.Map | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if there's an API key in localStorage
+    const storedKey = localStorage.getItem('mapbox_key');
+    if (storedKey) {
+      setMapApiKey(storedKey);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -42,6 +56,9 @@ export default function JobDetail() {
             title: jobData.title,
             description: jobData.description,
             location: jobData.location,
+            address: jobData.address,
+            latitude: jobData.latitude,
+            longitude: jobData.longitude,
             datePosted: jobData.datePosted.toDate(),
             createdBy: jobData.createdBy,
             status: jobData.status,
@@ -71,6 +88,30 @@ export default function JobDetail() {
     fetchJob();
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (!mapApiKey || !job || !job.latitude || !job.longitude || !mapContainer.current) {
+      return;
+    }
+    
+    mapboxgl.accessToken = mapApiKey;
+    
+    if (map.current) {
+      map.current.remove();
+    }
+    
+    map.current = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [job.longitude, job.latitude],
+      zoom: 13
+    });
+    
+    // Add marker
+    new mapboxgl.Marker({ color: '#F97316' })
+      .setLngLat([job.longitude, job.latitude])
+      .addTo(map.current);
+  }, [job, mapApiKey]);
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -85,6 +126,7 @@ export default function JobDetail() {
 
   const isJobPoster = currentUserData?.id === job.createdBy;
   const isContractor = currentUserData?.role === "contractor";
+  const hasLocation = job.latitude && job.longitude;
 
   return (
     <div>
@@ -140,6 +182,29 @@ export default function JobDetail() {
             <h2 className="text-xl font-semibold mb-2">Job Description</h2>
             <p className="whitespace-pre-line">{job.description}</p>
           </div>
+
+          {hasLocation && (
+            <div className="mt-6">
+              <h2 className="text-xl font-semibold mb-2 flex items-center">
+                <MapPin className="mr-2" />
+                Job Location
+              </h2>
+              {job.address && (
+                <p className="mb-4">{job.address}</p>
+              )}
+              
+              {mapApiKey ? (
+                <div className="h-[300px] w-full rounded-lg overflow-hidden" ref={mapContainer}></div>
+              ) : (
+                <Card className="p-4 bg-muted">
+                  <p>To view the location on a map, please add your Mapbox API key in the Jobs Map view.</p>
+                  <Button variant="outline" className="mt-2" asChild>
+                    <Link to="/jobs-map">Go to Map View</Link>
+                  </Button>
+                </Card>
+              )}
+            </div>
+          )}
           
           {isJobPoster && (
             <div className="mt-6 flex space-x-4">

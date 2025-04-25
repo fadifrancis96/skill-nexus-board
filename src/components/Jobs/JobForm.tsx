@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,6 +30,9 @@ const formSchema = z.object({
   location: z.string().min(2, {
     message: "Location is required",
   }),
+  address: z.string().min(5, {
+    message: "Full address is required for accurate mapping",
+  }),
   budget: z.string().optional(),
   category: z.string().optional(),
 });
@@ -39,6 +42,8 @@ type FormData = z.infer<typeof formSchema>;
 export default function JobForm() {
   const { currentUser } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number } | null>(null);
+  const [geocodingError, setGeocodingError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const form = useForm<FormData>({
@@ -47,16 +52,83 @@ export default function JobForm() {
       title: "",
       description: "",
       location: "",
+      address: "",
       budget: "",
       category: "",
     },
   });
+
+  const watchAddress = form.watch("address");
+
+  useEffect(() => {
+    // Geocode the address when it changes
+    const geocodeAddress = async () => {
+      if (!watchAddress || watchAddress.length < 5) {
+        setCoordinates(null);
+        setGeocodingError(null);
+        return;
+      }
+
+      try {
+        // Get mapbox token from localStorage
+        const mapboxToken = localStorage.getItem('mapbox_key');
+        
+        if (!mapboxToken) {
+          setGeocodingError("Mapbox API key is missing. Please add it in the map view.");
+          return;
+        }
+        
+        const response = await fetch(
+          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+            watchAddress
+          )}.json?access_token=${mapboxToken}&limit=1`
+        );
+
+        if (!response.ok) {
+          throw new Error("Geocoding failed");
+        }
+
+        const data = await response.json();
+        
+        if (data.features && data.features.length > 0) {
+          const [lng, lat] = data.features[0].center;
+          setCoordinates({ lat, lng });
+          setGeocodingError(null);
+        } else {
+          setGeocodingError("Could not find coordinates for this address");
+          setCoordinates(null);
+        }
+      } catch (error) {
+        console.error("Geocoding error:", error);
+        setGeocodingError("Error finding location. Please check your address.");
+        setCoordinates(null);
+      }
+    };
+
+    // Debounce the geocoding to avoid too many API calls
+    const timeoutId = setTimeout(() => {
+      if (watchAddress) {
+        geocodeAddress();
+      }
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [watchAddress]);
 
   const onSubmit = async (data: FormData) => {
     if (!currentUser) {
       toast({
         title: "Error",
         description: "You must be logged in to post a job",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!coordinates) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid address for mapping",
         variant: "destructive",
       });
       return;
@@ -79,6 +151,9 @@ export default function JobForm() {
         title: data.title,
         description: data.description,
         location: data.location,
+        address: data.address,
+        latitude: coordinates.lat,
+        longitude: coordinates.lng,
         budget: data.budget ? parseFloat(data.budget) : null,
         category: data.category || null,
         datePosted: new Date(),
@@ -155,7 +230,7 @@ export default function JobForm() {
               name="location"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Location</FormLabel>
+                  <FormLabel>General Location</FormLabel>
                   <FormControl>
                     <Input 
                       placeholder="e.g., Remote, New York, London"
@@ -185,6 +260,31 @@ export default function JobForm() {
               )}
             />
           </div>
+          
+          <FormField
+            control={form.control}
+            name="address"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Full Address (for Map)</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="e.g., 123 Main St, New York, NY 10001"
+                    {...field} 
+                  />
+                </FormControl>
+                {geocodingError && (
+                  <p className="text-sm text-red-500">{geocodingError}</p>
+                )}
+                {coordinates && (
+                  <p className="text-xs text-green-600">
+                    ✓ Location found and will be displayed on the map
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           
           <Button 
             type="submit" 

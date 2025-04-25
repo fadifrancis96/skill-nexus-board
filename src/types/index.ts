@@ -14,6 +14,9 @@ export interface Job {
   title: string;
   description: string;
   location: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   datePosted: Date;
   createdBy: string;
   status: 'open' | 'in_progress' | 'completed';
