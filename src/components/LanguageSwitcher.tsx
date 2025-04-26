@@ -14,15 +14,27 @@ const LanguageSwitcher = () => {
 
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng);
-    document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
+    document.documentElement.dir = lng === "ar" || lng === "he" ? "rtl" : "ltr";
     document.documentElement.lang = lng;
+  };
+
+  const getCurrentLanguage = () => {
+    switch(i18n.language) {
+      case 'ar':
+        return 'العربية';
+      case 'he':
+        return 'עברית';
+      default:
+        return 'English';
+    }
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Languages className="h-5 w-5" />
+        <Button variant="outline" size="sm" className="flex items-center gap-2">
+          <Languages className="h-4 w-4" />
+          <span>{getCurrentLanguage()}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
