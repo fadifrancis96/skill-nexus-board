@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,7 +85,6 @@ export default function Landing() {
       </header>
 
       <main className="flex-grow">
-        {/* Hero Section */}
         <section className="bg-gradient-to-b from-white to-purple-50 py-16 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
@@ -112,7 +110,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* Features Section */}
         <section id="features" className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center mb-12">
@@ -142,7 +139,6 @@ export default function Landing() {
           </div>
         </section>
 
-        {/* How It Works Section */}
         <section id="how-it-works" className="py-16 bg-purple-50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center mb-12">
