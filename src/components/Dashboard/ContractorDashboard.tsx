@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -6,12 +7,14 @@ import { Job, Offer } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export default function ContractorDashboard() {
   const { currentUser } = useAuth();
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
   const [myOffers, setMyOffers] = useState<Array<Offer & { jobId: string, jobTitle: string }>>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -111,12 +114,12 @@ export default function ContractorDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Contractor Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('contractorDashboard')}</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Available Jobs</CardTitle>
+            <CardTitle className="text-xl">{t('availableJobs')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{recentJobs.length}</p>
@@ -125,7 +128,7 @@ export default function ContractorDashboard() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Pending Offers</CardTitle>
+            <CardTitle className="text-xl">{t('pendingOffers')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{pendingOffers}</p>
@@ -134,7 +137,7 @@ export default function ContractorDashboard() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Accepted Offers</CardTitle>
+            <CardTitle className="text-xl">{t('acceptedOffers')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{acceptedOffers}</p>
@@ -144,15 +147,15 @@ export default function ContractorDashboard() {
       
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">Recent Jobs</h2>
+          <h2 className="text-2xl font-semibold">{t('recentJobs')}</h2>
           <Button variant="outline" asChild>
-            <Link to="/jobs">View All Jobs</Link>
+            <Link to="/jobs">{t('viewAllJobs')}</Link>
           </Button>
         </div>
         
         {loading ? (
           <div className="flex justify-center">
-            <p>Loading jobs...</p>
+            <p>{t('loadingJobs')}</p>
           </div>
         ) : recentJobs.length > 0 ? (
           <div className="space-y-4">
@@ -166,14 +169,14 @@ export default function ContractorDashboard() {
                       </Link>
                     </h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Location: {job.location} • Posted:{" "}
+                      {t('location')}: {job.location} • {t('posted')}:{" "}
                       {new Date(job.datePosted).toLocaleDateString()}
-                      {job.budget && ` • Budget: $${job.budget}`}
+                      {job.budget && ` • ${t('budget')}: $${job.budget}`}
                     </p>
                     <p className="line-clamp-2">{job.description}</p>
                     <div className="mt-4">
                       <Button size="sm" asChild>
-                        <Link to={`/jobs/${job.id}`}>View Details</Link>
+                        <Link to={`/jobs/${job.id}`}>{t('viewDetails')}</Link>
                       </Button>
                     </div>
                   </div>
@@ -184,7 +187,7 @@ export default function ContractorDashboard() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
-              <p>No open jobs available at the moment.</p>
+              <p>{t('noOpenJobs')}</p>
             </CardContent>
           </Card>
         )}
@@ -192,15 +195,15 @@ export default function ContractorDashboard() {
       
       <div>
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-semibold">My Recent Offers</h2>
+          <h2 className="text-2xl font-semibold">{t('myRecentOffers')}</h2>
           <Button variant="outline" asChild>
-            <Link to="/my-offers">View All My Offers</Link>
+            <Link to="/my-offers">{t('viewAllOffers')}</Link>
           </Button>
         </div>
         
         {loading ? (
           <div className="flex justify-center">
-            <p>Loading offers...</p>
+            <p>{t('loadingOffers')}</p>
           </div>
         ) : myOffers.length > 0 ? (
           <div className="space-y-4">
@@ -215,7 +218,7 @@ export default function ContractorDashboard() {
                         </Link>
                       </h3>
                       <p className="text-sm text-muted-foreground mb-2">
-                        Offered: ${offer.price} • Submitted: {new Date(offer.createdAt).toLocaleDateString()}
+                        {t('offered')}: ${offer.price} • {t('submitted')}: {new Date(offer.createdAt).toLocaleDateString()}
                       </p>
                       <p className="line-clamp-2">{offer.message}</p>
                     </div>
@@ -225,9 +228,9 @@ export default function ContractorDashboard() {
                         offer.status === 'accepted' ? 'bg-green-100 text-green-800' : 
                         'bg-red-100 text-red-800'}
                     `}>
-                      {offer.status === 'pending' ? 'Pending' : 
-                       offer.status === 'accepted' ? 'Accepted' : 
-                       'Rejected'}
+                      {offer.status === 'pending' ? t('pending') : 
+                       offer.status === 'accepted' ? t('accepted') : 
+                       t('rejected')}
                     </span>
                   </div>
                 </CardContent>
@@ -237,9 +240,9 @@ export default function ContractorDashboard() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="mb-4">You haven't made any offers yet.</p>
+              <p className="mb-4">{t('noOffersYet')}</p>
               <Button asChild>
-                <Link to="/jobs">Browse Jobs</Link>
+                <Link to="/jobs">{t('browseJobs')}</Link>
               </Button>
             </CardContent>
           </Card>

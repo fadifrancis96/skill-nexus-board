@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -6,12 +7,14 @@ import { Job, Offer } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export default function JobPosterDashboard() {
   const { currentUser } = useAuth();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [pendingOffers, setPendingOffers] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -75,12 +78,12 @@ export default function JobPosterDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6">Job Poster Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">{t('jobPosterDashboard')}</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Active Jobs</CardTitle>
+            <CardTitle className="text-xl">{t('activeJobs')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{activeJobs.length}</p>
@@ -89,7 +92,7 @@ export default function JobPosterDashboard() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Pending Offers</CardTitle>
+            <CardTitle className="text-xl">{t('pendingOffers')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{pendingOffers}</p>
@@ -98,7 +101,7 @@ export default function JobPosterDashboard() {
         
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xl">Completed Jobs</CardTitle>
+            <CardTitle className="text-xl">{t('completedJobs')}</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold text-primary">{completedJobs.length}</p>
@@ -107,15 +110,15 @@ export default function JobPosterDashboard() {
       </div>
       
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-2xl font-semibold">Recent Jobs</h2>
+        <h2 className="text-2xl font-semibold">{t('recentJobs')}</h2>
         <Button asChild>
-          <Link to="/jobs/new">Post a New Job</Link>
+          <Link to="/jobs/new">{t('postNewJob')}</Link>
         </Button>
       </div>
       
       {loading ? (
         <div className="flex justify-center">
-          <p>Loading jobs...</p>
+          <p>{t('loadingJobs')}</p>
         </div>
       ) : jobs.length > 0 ? (
         <div className="space-y-4">
@@ -130,7 +133,7 @@ export default function JobPosterDashboard() {
                       </Link>
                     </h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      Location: {job.location} • Posted:{" "}
+                      {t('location')}: {job.location} • {t('posted')}:{" "}
                       {new Date(job.datePosted).toLocaleDateString()}
                     </p>
                     <p className="line-clamp-2">{job.description}</p>
@@ -142,15 +145,15 @@ export default function JobPosterDashboard() {
                         job.status === 'in_progress' ? 'bg-blue-100 text-blue-800' : 
                         'bg-gray-100 text-gray-800'}
                     `}>
-                      {job.status === 'open' ? 'Open' : 
-                       job.status === 'in_progress' ? 'In Progress' : 
-                       'Completed'}
+                      {job.status === 'open' ? t('open') : 
+                       job.status === 'in_progress' ? t('inProgress') : 
+                       t('completed')}
                     </span>
                     <Link 
                       to={`/jobs/${job.id}/offers`} 
                       className="text-sm text-primary hover:underline mt-2"
                     >
-                      View Offers
+                      {t('viewOffers')}
                     </Link>
                   </div>
                 </div>
@@ -161,7 +164,7 @@ export default function JobPosterDashboard() {
           {jobs.length > 5 && (
             <div className="flex justify-center mt-4">
               <Button variant="outline" asChild>
-                <Link to="/my-jobs">View All Jobs</Link>
+                <Link to="/my-jobs">{t('viewAllJobs')}</Link>
               </Button>
             </div>
           )}
@@ -169,9 +172,9 @@ export default function JobPosterDashboard() {
       ) : (
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="mb-4">You haven't posted any jobs yet.</p>
+            <p className="mb-4">{t('noJobsPosted')}</p>
             <Button asChild>
-              <Link to="/jobs/new">Post Your First Job</Link>
+              <Link to="/jobs/new">{t('postYourFirstJob')}</Link>
             </Button>
           </CardContent>
         </Card>

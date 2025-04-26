@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { Languages } from "lucide-react";
+import { Globe } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import {
   DropdownMenu,
@@ -16,6 +16,9 @@ const LanguageSwitcher = () => {
     i18n.changeLanguage(lng);
     document.documentElement.dir = lng === "ar" || lng === "he" ? "rtl" : "ltr";
     document.documentElement.lang = lng;
+    
+    // Force a reload to properly apply RTL/LTR changes throughout the app
+    window.location.reload();
   };
 
   const getCurrentLanguage = () => {
@@ -33,7 +36,7 @@ const LanguageSwitcher = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="flex items-center gap-2">
-          <Languages className="h-4 w-4" />
+          <Globe className="h-4 w-4" />
           <span>{getCurrentLanguage()}</span>
         </Button>
       </DropdownMenuTrigger>

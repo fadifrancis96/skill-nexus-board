@@ -1,3 +1,4 @@
+
 import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,32 +37,32 @@ export default function AppLayout({ children }: AppLayoutProps) {
   
   const navLinks = [
     {
-      name: "Dashboard",
+      name: t('dashboard'),
       path: "/dashboard",
       show: true,
     },
     {
-      name: "Jobs",
+      name: t('jobs'),
       path: "/jobs",
       show: true,
     },
     {
-      name: "All Jobs",
+      name: t('allJobs'),
       path: "/jobs-map",
       show: !isJobPoster, // Only show to contractors
     },
     {
-      name: "Post a Job",
+      name: t('postJob'),
       path: "/jobs/new",
       show: isJobPoster,
     },
     {
-      name: "My Jobs",
+      name: t('myJobs'),
       path: "/my-jobs",
       show: isJobPoster,
     },
     {
-      name: "My Offers",
+      name: t('myOffers'),
       path: "/my-offers",
       show: !isJobPoster,
     },
@@ -106,7 +107,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('myAccount')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuGroup>
                     <DropdownMenuItem>
@@ -118,15 +119,15 @@ export default function AppLayout({ children }: AppLayoutProps) {
                     <DropdownMenuItem>
                       <span className="capitalize">
                         {currentUserData?.role === "job_poster"
-                          ? "Job Poster"
-                          : "Contractor"}
+                          ? t('jobPoster')
+                          : t('contractor')}
                       </span>
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     <LogOut className="mr-2 h-4 w-4" />
-                    <span>Log out</span>
+                    <span>{t('logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -163,7 +164,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               ))}
               <div className="px-3 py-2">
                 <div className="text-sm font-medium text-gray-500">
-                  Signed in as {currentUserData?.displayName || currentUserData?.email}
+                  {currentUserData?.displayName || currentUserData?.email}
                 </div>
                 <Button 
                   variant="ghost"
@@ -171,7 +172,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   onClick={handleSignOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
+                  <span>{t('logout')}</span>
                 </Button>
               </div>
             </div>
