@@ -8,15 +8,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useEffect } from "react";
 
 const LanguageSwitcher = () => {
   const { i18n } = useTranslation();
 
-  const changeLanguage = (lng: string) => {
-    i18n.changeLanguage(lng);
+  // Apply saved language on component mount
+  useEffect(() => {
+    const savedLang = localStorage.getItem("preferredLanguage");
+    if (savedLang && savedLang !== i18n.language) {
+      applyLanguage(savedLang);
+    }
+  }, []);
+
+  const applyLanguage = (lng: string) => {
+    // Set html dir and lang attributes first
     document.documentElement.dir = lng === "ar" || lng === "he" ? "rtl" : "ltr";
     document.documentElement.lang = lng;
     
+    // Save language preference to localStorage
+    localStorage.setItem("preferredLanguage", lng);
+    
+    // Change language after setting the direction
+    i18n.changeLanguage(lng);
+  };
+  
+  const changeLanguage = (lng: string) => {
+    applyLanguage(lng);
     // Force a reload to properly apply RTL/LTR changes throughout the app
     window.location.reload();
   };
