@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 
 export default function Landing() {
   const { currentUser } = useAuth();
@@ -46,8 +46,9 @@ export default function Landing() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <Link to="/" className="text-2xl font-bold text-primary">
-                JobNexus
+              <Link to="/" className="text-2xl font-bold flex items-center">
+                <Sparkles className="h-6 w-6 mr-2 text-primary" />
+                <span className="text-primary arabic">شغلني</span>
               </Link>
             </div>
             <nav className="hidden md:flex space-x-4">
@@ -86,15 +87,18 @@ export default function Landing() {
 
       <main className="flex-grow">
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-white to-gray-50 py-16 md:py-24">
+        <section className="bg-gradient-to-b from-white to-purple-50 py-16 md:py-24">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                Connect with Top Talent and Find Great Projects
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 flex items-center justify-center">
+                <span className="text-primary arabic text-5xl md:text-6xl">شغلني</span>
               </h1>
+              <p className="text-lg md:text-xl text-gray-600 mb-2">
+                Connect Talent with Opportunity
+              </p>
               <p className="text-lg md:text-xl text-gray-600 mb-8">
-                JobNexus brings together skilled contractors and job posters in 
-                a seamless marketplace designed to make hiring and finding work simple.
+                The platform that brings together skilled contractors and job posters in 
+                a seamless marketplace designed for success.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button asChild size="lg" className="text-lg">
@@ -113,7 +117,7 @@ export default function Landing() {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">
-                Why Choose JobNexus?
+                Why Choose <span className="text-primary arabic">شغلني</span>?
               </h2>
               <p className="text-gray-600">
                 Our platform provides all the tools you need to successfully connect
@@ -123,7 +127,7 @@ export default function Landing() {
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
               {features.map((feature, index) => (
-                <Card key={index}>
+                <Card key={index} className="border border-purple-100 hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex items-start">
                       <div className="mr-4 mt-1 bg-primary bg-opacity-10 p-2 rounded-full">
@@ -139,7 +143,7 @@ export default function Landing() {
         </section>
 
         {/* How It Works Section */}
-        <section id="how-it-works" className="py-16 bg-gray-50">
+        <section id="how-it-works" className="py-16 bg-purple-50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             <div className="max-w-3xl mx-auto text-center mb-12">
               <h2 className="text-3xl font-bold mb-4">
@@ -160,7 +164,7 @@ export default function Landing() {
                     {category.steps.map((step, stepIdx) => (
                       <div key={stepIdx} className="flex">
                         <div className="mr-4">
-                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-white font-bold">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-secondary text-white font-bold">
                             {stepIdx + 1}
                           </div>
                         </div>
@@ -175,8 +179,8 @@ export default function Landing() {
             </div>
 
             <div className="mt-16 text-center">
-              <Button asChild size="lg">
-                <Link to="/register">Join JobNexus Today</Link>
+              <Button asChild size="lg" className="bg-secondary hover:bg-secondary/90 text-white">
+                <Link to="/register">Join <span className="arabic mx-1">شغلني</span> Today</Link>
               </Button>
             </div>
           </div>
@@ -187,8 +191,9 @@ export default function Landing() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-3 gap-8">
             <div>
-              <Link to="/" className="text-2xl font-bold text-white">
-                JobNexus
+              <Link to="/" className="text-2xl font-bold text-white flex items-center">
+                <Sparkles className="h-6 w-6 mr-2" />
+                <span className="arabic">شغلني</span>
               </Link>
               <p className="mt-2 text-gray-400">
                 Connecting talent with opportunity
@@ -225,12 +230,12 @@ export default function Landing() {
                 Have questions? Contact our support team.
               </p>
               <p className="text-gray-400 mt-2">
-                support@jobnexus.com
+                support@shaghilni.com
               </p>
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700 text-center text-gray-400">
-            <p>© {new Date().getFullYear()} JobNexus. All rights reserved.</p>
+            <p>&copy; {new Date().getFullYear()} <span className="arabic">شغلني</span>. All rights reserved.</p>
           </div>
         </div>
       </footer>

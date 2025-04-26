@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Menu, List } from "lucide-react";
+import { LogOut, User, Menu, List, Sparkles } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,8 +73,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
-              <Link to="/" className="text-2xl font-bold text-primary">
-                JobNexus
+              <Link to="/" className="text-2xl font-bold text-primary flex items-center">
+                <Sparkles className="h-6 w-6 mr-2" />
+                <span className="arabic">شغلني</span>
               </Link>
             </div>
             
@@ -185,7 +186,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <footer className="bg-white border-t border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} JobNexus. All rights reserved.
+            &copy; {new Date().getFullYear()} <span className="arabic">شغلني</span>. All rights reserved.
           </p>
         </div>
       </footer>
