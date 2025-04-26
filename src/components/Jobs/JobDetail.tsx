@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import OfferForm from "@/components/Offers/OfferForm";
 import { Separator } from "@/components/ui/separator";
+import { Job } from "@/types";
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();

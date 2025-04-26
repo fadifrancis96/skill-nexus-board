@@ -3,7 +3,7 @@ import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Menu, MapPin } from "lucide-react";
+import { LogOut, User, Menu, List } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -44,7 +44,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       show: true,
     },
     {
-      name: "Jobs Map",
+      name: "All Jobs",
       path: "/jobs-map",
       show: !isJobPoster, // Only show to contractors
     },
@@ -86,7 +86,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   to={link.path}
                   className="text-gray-600 hover:text-primary px-3 py-2 rounded-md text-sm font-medium flex items-center"
                 >
-                  {link.path === "/jobs-map" && <MapPin className="mr-1 h-4 w-4" />}
+                  {link.path === "/jobs-map" && <List className="mr-1 h-4 w-4" />}
                   {link.name}
                 </Link>
               ))}
@@ -156,7 +156,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   className="flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-600 hover:text-primary hover:bg-gray-50"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  {link.path === "/jobs-map" && <MapPin className="mr-1 h-4 w-4" />}
+                  {link.path === "/jobs-map" && <List className="mr-1 h-4 w-4" />}
                   {link.name}
                 </Link>
               ))}
