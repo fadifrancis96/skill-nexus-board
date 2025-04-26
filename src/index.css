@@ -94,8 +94,13 @@
     @apply bg-background text-foreground font-sans;
   }
 
-  /* Add Arabic text support */
+  /* Add Arabic and Hebrew text support */
   .arabic {
     font-family: 'Cairo', sans-serif;
+  }
+
+  /* RTL Support */
+  [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+    --tw-space-x-reverse: 1;
   }
 }

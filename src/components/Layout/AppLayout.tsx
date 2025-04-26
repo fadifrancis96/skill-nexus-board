@@ -1,4 +1,3 @@
-
 import { ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +14,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -24,6 +25,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const { currentUserData, signOut } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { t } = useTranslation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -79,7 +81,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </Link>
             </div>
             
-            {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-4">
               {filteredNavLinks.map((link) => (
                 <Link
@@ -94,6 +95,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </nav>
 
             <div className="hidden md:flex items-center space-x-4">
+              <LanguageSwitcher />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
@@ -130,7 +132,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </DropdownMenu>
             </div>
 
-            {/* Mobile menu button */}
             <div className="md:hidden">
               <Button
                 variant="ghost"
@@ -142,7 +143,6 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
           </div>
 
-          {/* Mobile Navigation */}
           <div
             className={cn(
               "md:hidden",
@@ -186,7 +186,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <footer className="bg-white border-t border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <p className="text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} <span className="arabic">شغلني</span>. All rights reserved.
+            &copy; {new Date().getFullYear()} <span className="arabic">شغلني</span>. {t('allRightsReserved')}
           </p>
         </div>
       </footer>
