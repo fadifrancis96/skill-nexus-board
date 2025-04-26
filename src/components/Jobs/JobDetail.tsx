@@ -1,17 +1,14 @@
-import { useEffect, useState, useRef } from "react";
+
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Job } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import OfferForm from "@/components/Offers/OfferForm";
 import { Separator } from "@/components/ui/separator";
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import { MapPin } from "lucide-react";
 
 export default function JobDetail() {
   const { id } = useParams<{ id: string }>();
@@ -19,18 +16,7 @@ export default function JobDetail() {
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [jobPosterName, setJobPosterName] = useState<string>("");
-  const [mapApiKey, setMapApiKey] = useState<string | null>(null);
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<L.Map | null>(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    // Check if there's an API key in localStorage
-    const storedKey = localStorage.getItem('mapbox_key');
-    if (storedKey) {
-      setMapApiKey(storedKey);
-    }
-  }, []);
 
   useEffect(() => {
     const fetchJob = async () => {
@@ -55,9 +41,6 @@ export default function JobDetail() {
             title: jobData.title,
             description: jobData.description,
             location: jobData.location,
-            address: jobData.address,
-            latitude: jobData.latitude,
-            longitude: jobData.longitude,
             datePosted: jobData.datePosted.toDate(),
             createdBy: jobData.createdBy,
             status: jobData.status,
@@ -87,35 +70,6 @@ export default function JobDetail() {
     fetchJob();
   }, [id, navigate]);
 
-  useEffect(() => {
-    if (!job || !job.latitude || !job.longitude || !mapContainer.current) {
-      return;
-    }
-
-    // Initialize map if it doesn't exist
-    if (!map.current) {
-      map.current = L.map(mapContainer.current).setView([job.latitude, job.longitude], 13);
-      
-      // Add OpenStreetMap tiles
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map.current);
-      
-      // Add marker
-      L.marker([job.latitude, job.longitude], {
-        icon: L.divIcon({
-          className: 'bg-primary rounded-full w-4 h-4 -ml-2 -mt-2',
-          iconSize: [16, 16],
-        })
-      }).addTo(map.current);
-    }
-
-    return () => {
-      map.current?.remove();
-      map.current = null;
-    };
-  }, [job]);
-
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -130,13 +84,12 @@ export default function JobDetail() {
 
   const isJobPoster = currentUserData?.id === job.createdBy;
   const isContractor = currentUserData?.role === "contractor";
-  const hasLocation = job.latitude && job.longitude;
 
   return (
     <div>
       <div className="mb-6">
         <Link to="/jobs" className="text-primary hover:underline">
-          &larr; Back to Jobs
+          ← Back to Jobs
         </Link>
       </div>
       
@@ -186,19 +139,6 @@ export default function JobDetail() {
             <h2 className="text-xl font-semibold mb-2">Job Description</h2>
             <p className="whitespace-pre-line">{job.description}</p>
           </div>
-
-          {hasLocation && (
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold mb-2 flex items-center">
-                <MapPin className="mr-2" />
-                Job Location
-              </h2>
-              {job.address && (
-                <p className="mb-4">{job.address}</p>
-              )}
-              <div className="h-[300px] w-full rounded-lg overflow-hidden" ref={mapContainer} />
-            </div>
-          )}
           
           {isJobPoster && (
             <div className="mt-6 flex space-x-4">

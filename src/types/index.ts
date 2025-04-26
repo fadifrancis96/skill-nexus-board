@@ -1,4 +1,3 @@
-
 export type UserRole = 'job_poster' | 'contractor';
 
 export interface User {
@@ -14,9 +13,6 @@ export interface Job {
   title: string;
   description: string;
   location: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
   datePosted: Date;
   createdBy: string;
   status: 'open' | 'in_progress' | 'completed';
