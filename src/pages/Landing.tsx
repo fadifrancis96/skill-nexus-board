@@ -226,7 +226,7 @@ export default function Landing() {
                 Have questions? Contact our support team.
               </p>
               <p className="text-gray-400 mt-2">
-                shaghilni-support@gmail.com
+                shagilni@gmail.com
               </p>
             </div>
           </div>
