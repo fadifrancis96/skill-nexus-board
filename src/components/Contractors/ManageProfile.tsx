@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -14,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import ManageCompletedJobs from "./ManageCompletedJobs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ManageProfile() {
   const { currentUser, currentUserData } = useAuth();
@@ -29,6 +29,7 @@ export default function ManageProfile() {
   const [profileImage, setProfileImage] = useState<File | null>(null);
   const [skillInput, setSkillInput] = useState("");
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
+  const [activeTab, setActiveTab] = useState("profile");
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -165,131 +166,142 @@ export default function ManageProfile() {
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Manage Your Profile</h1>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleProfileUpdate} className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex flex-col items-center md:flex-row md:space-x-4 mb-6">
-                <div className="mb-4 md:mb-0">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage 
-                      src={profileImage 
-                        ? URL.createObjectURL(profileImage) 
-                        : profile.profilePicture
-                      } 
-                    />
-                    <AvatarFallback className="text-2xl">
-                      {profile.displayName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <div>
-                  <Label htmlFor="profile-image">Profile Picture</Label>
-                  <Input
-                    id="profile-image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="mt-1"
-                  />
-                </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="displayName">Display Name</Label>
-                <Input
-                  id="displayName"
-                  value={profile.displayName}
-                  onChange={(e) => setProfile({...profile, displayName: e.target.value})}
-                  required
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea
-                  id="bio"
-                  value={profile.bio}
-                  onChange={(e) => setProfile({...profile, bio: e.target.value})}
-                  className="h-24"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="contactEmail">Contact Email</Label>
-                <Input
-                  id="contactEmail"
-                  type="email"
-                  value={profile.contactEmail || ''}
-                  onChange={(e) => setProfile({...profile, contactEmail: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="phone">Phone</Label>
-                <Input
-                  id="phone"
-                  value={profile.phone || ''}
-                  onChange={(e) => setProfile({...profile, phone: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="website">Website</Label>
-                <Input
-                  id="website"
-                  value={profile.website || ''}
-                  onChange={(e) => setProfile({...profile, website: e.target.value})}
-                />
-              </div>
-              
-              <div>
-                <Label>Skills</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {profile.skills.map((skill, index) => (
-                    <div key={index} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
-                      {skill}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveSkill(skill)}
-                        className="ml-2 text-secondary-foreground hover:text-primary"
-                      >
-                        &times;
-                      </button>
+      <Tabs defaultValue="profile" value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-6">
+          <TabsTrigger value="profile">Profile Information</TabsTrigger>
+          <TabsTrigger value="projects">Completed Projects</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="profile">
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile Information</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleProfileUpdate} className="space-y-6">
+                <div className="space-y-4">
+                  <div className="flex flex-col items-center md:flex-row md:space-x-4 mb-6">
+                    <div className="mb-4 md:mb-0">
+                      <Avatar className="h-24 w-24">
+                        <AvatarImage 
+                          src={profileImage 
+                            ? URL.createObjectURL(profileImage) 
+                            : profile.profilePicture
+                          } 
+                        />
+                        <AvatarFallback className="text-2xl">
+                          {profile.displayName.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                     </div>
-                  ))}
+                    <div>
+                      <Label htmlFor="profile-image">Profile Picture</Label>
+                      <Input
+                        id="profile-image"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="displayName">Display Name</Label>
+                    <Input
+                      id="displayName"
+                      value={profile.displayName}
+                      onChange={(e) => setProfile({...profile, displayName: e.target.value})}
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="bio">Bio</Label>
+                    <Textarea
+                      id="bio"
+                      value={profile.bio}
+                      onChange={(e) => setProfile({...profile, bio: e.target.value})}
+                      className="h-24"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="contactEmail">Contact Email</Label>
+                    <Input
+                      id="contactEmail"
+                      type="email"
+                      value={profile.contactEmail || ''}
+                      onChange={(e) => setProfile({...profile, contactEmail: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      value={profile.phone || ''}
+                      onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="website">Website</Label>
+                    <Input
+                      id="website"
+                      value={profile.website || ''}
+                      onChange={(e) => setProfile({...profile, website: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label>Skills</Label>
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {profile.skills.map((skill, index) => (
+                        <div key={index} className="flex items-center bg-secondary text-secondary-foreground px-3 py-1 rounded-full text-sm">
+                          {skill}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSkill(skill)}
+                            className="ml-2 text-secondary-foreground hover:text-primary"
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex space-x-2">
+                      <Input
+                        value={skillInput}
+                        onChange={(e) => setSkillInput(e.target.value)}
+                        placeholder="Add skill..."
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddSkill();
+                          }
+                        }}
+                      />
+                      <Button type="button" onClick={handleAddSkill}>Add</Button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex space-x-2">
-                  <Input
-                    value={skillInput}
-                    onChange={(e) => setSkillInput(e.target.value)}
-                    placeholder="Add skill..."
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddSkill();
-                      }
-                    }}
-                  />
-                  <Button type="button" onClick={handleAddSkill}>Add</Button>
-                </div>
-              </div>
-            </div>
-            
-            <Button type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Save Profile"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      <ManageCompletedJobs 
-        completedJobs={completedJobs}
-        setCompletedJobs={setCompletedJobs}
-      />
+                
+                <Button type="submit" disabled={saving}>
+                  {saving ? "Saving..." : "Save Profile"}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="projects">
+          <ManageCompletedJobs 
+            completedJobs={completedJobs}
+            setCompletedJobs={setCompletedJobs}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

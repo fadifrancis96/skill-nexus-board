@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -210,11 +211,13 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
 
   return (
     <div>
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold mb-4">Your Completed Projects</h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold">Your Completed Projects</h2>
         <Dialog open={isAddingJob} onOpenChange={setIsAddingJob}>
           <DialogTrigger asChild>
-            <Button>Add New Project</Button>
+            <Button className="bg-primary hover:bg-primary/90" size="lg">
+              <ImagePlus className="mr-2 h-4 w-4" /> Add New Project
+            </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
@@ -326,10 +329,14 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
       </div>
 
       {completedJobs.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center text-gray-500">
-            <p>You haven't added any completed projects yet.</p>
-            <p className="mt-2">Showcase your work by adding projects you've completed.</p>
+        <Card className="bg-muted/30">
+          <CardContent className="p-12 text-center">
+            <ImagePlus className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
+            <p className="text-muted-foreground mb-6">Showcase your work by adding completed projects with images</p>
+            <Button onClick={() => setIsAddingJob(true)}>
+              Add Your First Project
+            </Button>
           </CardContent>
         </Card>
       ) : (
