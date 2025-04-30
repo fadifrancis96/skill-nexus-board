@@ -15,11 +15,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/hooks/use-toast";
 import ManageCompletedJobs from "./ManageCompletedJobs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertCircle } from "lucide-react";
 
 export default function ManageProfile() {
   const { currentUser, currentUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [profile, setProfile] = useState<ContractorProfile>({
     userId: '',
     displayName: '',
@@ -96,36 +98,52 @@ export default function ManageProfile() {
     setSaving(true);
     
     try {
-      // Upload profile image if changed
-      let profilePictureUrl = profile.profilePicture;
-      
-      if (profileImage) {
-        try {
-          const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
-          const uploadResult = await uploadBytes(storageRef, profileImage);
-          profilePictureUrl = await getDownloadURL(uploadResult.ref);
-          console.log("Profile image uploaded successfully:", profilePictureUrl);
-        } catch (uploadError) {
-          console.error("Error uploading profile image:", uploadError);
-          toast({
-            title: "Warning",
-            description: "Failed to upload profile image, but continuing with profile update",
-            variant: "destructive",
-          });
-          // Continue with profile update even if image upload fails
-        }
-      }
-
-      // Update profile with new data
+      // Prepare the profile update object first
       const updatedProfile: ContractorProfile = {
         ...profile,
-        profilePicture: profilePictureUrl,
         completedJobsCount: completedJobs.length
       };
 
-      // Save to Firestore
+      // Only attempt to upload image if one was selected
+      if (profileImage) {
+        try {
+          setUploadingImage(true);
+          toast({
+            title: "Uploading image...",
+            description: "Please wait while we upload your profile image"
+          });
+          
+          const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
+          const uploadResult = await uploadBytes(storageRef, profileImage);
+          const downloadUrl = await getDownloadURL(uploadResult.ref);
+          
+          // Only update the URL if successfully uploaded
+          updatedProfile.profilePicture = downloadUrl;
+          console.log("Profile image uploaded successfully:", downloadUrl);
+          
+          setUploadingImage(false);
+          toast({
+            title: "Image uploaded",
+            description: "Your profile image was uploaded successfully"
+          });
+        } catch (uploadError) {
+          console.error("Error uploading profile image:", uploadError);
+          setUploadingImage(false);
+          toast({
+            title: "Warning",
+            description: "Failed to upload profile image, but will continue with profile update",
+            variant: "destructive",
+          });
+          
+          // Don't change the existing profile picture URL if the upload failed
+          // This prevents undefined values from being written to Firestore
+        }
+      }
+
+      // Save to Firestore - ensure we're not passing undefined values
       await setDoc(doc(db, "contractorProfiles", currentUser.uid), updatedProfile);
       
+      // Update local state with the saved data
       setProfile(updatedProfile);
       
       toast({
@@ -133,7 +151,10 @@ export default function ManageProfile() {
         description: "Your profile has been updated",
       });
 
-      console.log("Profile updated successfully");
+      console.log("Profile updated successfully", updatedProfile);
+      
+      // Clear the file input after successful update
+      setProfileImage(null);
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -167,6 +188,17 @@ export default function ManageProfile() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
+      
+      // Check file size (5MB limit)
+      if (selectedFile.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Error",
+          description: "Image file size must be less than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      
       setProfileImage(selectedFile);
       
       // Clean up previous preview URL to prevent memory leaks
@@ -180,6 +212,15 @@ export default function ManageProfile() {
       
       console.log("New image selected for upload");
     }
+  };
+
+  // Reset the file input
+  const handleClearImage = () => {
+    if (profileImagePreview && !profile.profilePicture) {
+      URL.revokeObjectURL(profileImagePreview);
+    }
+    setProfileImage(null);
+    setProfileImagePreview(profile.profilePicture || null);
   };
 
   // Clean up object URLs when component unmounts
@@ -235,16 +276,30 @@ export default function ManageProfile() {
                         </AvatarFallback>
                       </Avatar>
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <Label htmlFor="profile-image">Profile Picture</Label>
-                      <Input
-                        id="profile-image"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageChange}
-                        className="mt-1"
-                      />
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <div className="flex items-center gap-2 mt-1">
+                        <Input
+                          id="profile-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          className="flex-1"
+                          disabled={uploadingImage}
+                        />
+                        {profileImage && (
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={handleClearImage}
+                            size="sm"
+                          >
+                            Clear
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 flex items-center">
+                        <AlertCircle className="h-3 w-3 mr-1" />
                         Maximum file size: 5MB
                       </p>
                     </div>
@@ -331,8 +386,12 @@ export default function ManageProfile() {
                   </div>
                 </div>
                 
-                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
-                  {saving ? "Saving..." : "Save Profile"}
+                <Button 
+                  type="submit" 
+                  disabled={saving || uploadingImage} 
+                  className="w-full sm:w-auto"
+                >
+                  {saving ? "Saving..." : uploadingImage ? "Uploading..." : "Save Profile"}
                 </Button>
               </form>
             </CardContent>
