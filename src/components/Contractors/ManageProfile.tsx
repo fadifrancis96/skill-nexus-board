@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
@@ -27,6 +28,7 @@ export default function ManageProfile() {
     completedJobsCount: 0,
   });
   const [profileImage, setProfileImage] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [skillInput, setSkillInput] = useState("");
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
@@ -41,7 +43,11 @@ export default function ManageProfile() {
         const profileDoc = await getDoc(doc(db, "contractorProfiles", currentUser.uid));
         
         if (profileDoc.exists()) {
-          setProfile(profileDoc.data() as ContractorProfile);
+          const profileData = profileDoc.data() as ContractorProfile;
+          setProfile(profileData);
+          if (profileData.profilePicture) {
+            setProfileImagePreview(profileData.profilePicture);
+          }
         } else {
           // Initialize with user data
           setProfile({
@@ -93,9 +99,18 @@ export default function ManageProfile() {
       let profilePictureUrl = profile.profilePicture;
       
       if (profileImage) {
-        const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
-        await uploadBytes(storageRef, profileImage);
-        profilePictureUrl = await getDownloadURL(storageRef);
+        try {
+          const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
+          const uploadResult = await uploadBytes(storageRef, profileImage);
+          profilePictureUrl = await getDownloadURL(uploadResult.ref);
+        } catch (uploadError) {
+          console.error("Error uploading profile image:", uploadError);
+          toast({
+            title: "Warning",
+            description: "Failed to upload profile image, but continuing with profile update",
+            variant: "destructive",
+          });
+        }
       }
 
       // Update profile with new data
@@ -144,7 +159,12 @@ export default function ManageProfile() {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setProfileImage(e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      setProfileImage(selectedFile);
+      
+      // Create a preview URL
+      const previewUrl = URL.createObjectURL(selectedFile);
+      setProfileImagePreview(previewUrl);
     }
   };
 
@@ -184,10 +204,8 @@ export default function ManageProfile() {
                     <div className="mb-4 md:mb-0">
                       <Avatar className="h-24 w-24">
                         <AvatarImage 
-                          src={profileImage 
-                            ? URL.createObjectURL(profileImage) 
-                            : profile.profilePicture
-                          } 
+                          src={profileImagePreview || undefined}
+                          alt={profile.displayName}
                         />
                         <AvatarFallback className="text-2xl">
                           {profile.displayName.charAt(0)}
