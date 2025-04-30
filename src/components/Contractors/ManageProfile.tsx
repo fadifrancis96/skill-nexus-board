@@ -94,6 +94,7 @@ export default function ManageProfile() {
     if (!currentUser?.uid) return;
 
     setSaving(true);
+    
     try {
       // Upload profile image if changed
       let profilePictureUrl = profile.profilePicture;
@@ -103,6 +104,7 @@ export default function ManageProfile() {
           const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
           const uploadResult = await uploadBytes(storageRef, profileImage);
           profilePictureUrl = await getDownloadURL(uploadResult.ref);
+          console.log("Profile image uploaded successfully:", profilePictureUrl);
         } catch (uploadError) {
           console.error("Error uploading profile image:", uploadError);
           toast({
@@ -110,6 +112,7 @@ export default function ManageProfile() {
             description: "Failed to upload profile image, but continuing with profile update",
             variant: "destructive",
           });
+          // Continue with profile update even if image upload fails
         }
       }
 
@@ -120,6 +123,7 @@ export default function ManageProfile() {
         completedJobsCount: completedJobs.length
       };
 
+      // Save to Firestore
       await setDoc(doc(db, "contractorProfiles", currentUser.uid), updatedProfile);
       
       setProfile(updatedProfile);
@@ -128,6 +132,8 @@ export default function ManageProfile() {
         title: "Success",
         description: "Your profile has been updated",
       });
+
+      console.log("Profile updated successfully");
     } catch (error) {
       console.error("Error updating profile:", error);
       toast({
@@ -136,6 +142,7 @@ export default function ManageProfile() {
         variant: "destructive",
       });
     } finally {
+      // Always reset saving state, even if there's an error
       setSaving(false);
     }
   };
@@ -162,11 +169,27 @@ export default function ManageProfile() {
       const selectedFile = e.target.files[0];
       setProfileImage(selectedFile);
       
+      // Clean up previous preview URL to prevent memory leaks
+      if (profileImagePreview && !profile.profilePicture) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+      
       // Create a preview URL
       const previewUrl = URL.createObjectURL(selectedFile);
       setProfileImagePreview(previewUrl);
+      
+      console.log("New image selected for upload");
     }
   };
+
+  // Clean up object URLs when component unmounts
+  useEffect(() => {
+    return () => {
+      if (profileImagePreview && !profile.profilePicture) {
+        URL.revokeObjectURL(profileImagePreview);
+      }
+    };
+  }, [profileImagePreview, profile.profilePicture]);
 
   if (loading) {
     return <div className="text-center py-8">Loading profile...</div>;
@@ -221,6 +244,9 @@ export default function ManageProfile() {
                         onChange={handleImageChange}
                         className="mt-1"
                       />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Maximum file size: 5MB
+                      </p>
                     </div>
                   </div>
                   
@@ -305,7 +331,7 @@ export default function ManageProfile() {
                   </div>
                 </div>
                 
-                <Button type="submit" disabled={saving}>
+                <Button type="submit" disabled={saving} className="w-full sm:w-auto">
                   {saving ? "Saving..." : "Save Profile"}
                 </Button>
               </form>
