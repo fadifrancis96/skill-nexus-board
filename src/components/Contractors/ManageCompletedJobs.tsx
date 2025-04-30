@@ -1,8 +1,6 @@
-
 import { useState } from "react";
 import { collection, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { CompletedJob } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -32,7 +30,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { Pencil, Trash2, ImagePlus } from "lucide-react";
+import { Pencil, Trash2, ImagePlus, AlertCircle } from "lucide-react";
+
+// Maximum file size: 2MB (reasonable for base64 encoded images in Firestore)
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
 
 interface ManageCompletedJobsProps {
   completedJobs: CompletedJob[];
@@ -52,6 +53,22 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
   const [uploading, setUploading] = useState(false);
   const [deletingJobId, setDeletingJobId] = useState<string | null>(null);
 
+  // Convert file to base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      
+      fileReader.onload = () => {
+        resolve(fileReader.result as string);
+      };
+      
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  };
+
   const resetForm = () => {
     setJobTitle("");
     setJobDescription("");
@@ -65,12 +82,26 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files);
-      setSelectedImages(prev => [...prev, ...newImages]);
+      // Filter out files that are too large
+      const validFiles = Array.from(e.target.files).filter(file => {
+        if (file.size > MAX_FILE_SIZE) {
+          toast({
+            title: "File too large",
+            description: `${file.name} exceeds the 2MB limit and will be skipped.`,
+            variant: "destructive"
+          });
+          return false;
+        }
+        return true;
+      });
+      
+      setSelectedImages(prev => [...prev, ...validFiles]);
     }
   };
 
   const handleRemoveImage = (index: number) => {
+    // Revoke object URL to prevent memory leaks
+    URL.revokeObjectURL(URL.createObjectURL(selectedImages[index]));
     setSelectedImages(prev => prev.filter((_, i) => i !== index));
   };
 
@@ -88,14 +119,37 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
 
     try {
       setUploading(true);
-      const imageUrls: string[] = [];
+      const imageBase64Array: string[] = [];
       
-      // Upload new images if any
+      // Convert images to base64 if any
+      toast({
+        title: "Processing images...",
+        description: `Please wait while we process ${selectedImages.length} images`
+      });
+      
       for (const image of selectedImages) {
-        const imageRef = ref(storage, `completed-jobs/${currentUser.uid}/${Date.now()}-${image.name}`);
-        await uploadBytes(imageRef, image);
-        const url = await getDownloadURL(imageRef);
-        imageUrls.push(url);
+        try {
+          // Check file size
+          if (image.size > MAX_FILE_SIZE) {
+            toast({
+              title: "Skip large image",
+              description: `Image ${image.name} exceeds 2MB limit and will be skipped`,
+              variant: "destructive"
+            });
+            continue;
+          }
+          
+          // Convert to base64
+          const base64Image = await convertToBase64(image);
+          imageBase64Array.push(base64Image);
+        } catch (error) {
+          console.error("Error processing image:", error);
+          toast({
+            title: "Image processing failed",
+            description: "One of your images couldn't be processed",
+            variant: "destructive"
+          });
+        }
       }
 
       if (editingJobId) {
@@ -109,7 +163,7 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
             completedDate: new Date(jobCompletedDate),
             clientName: jobClientName || undefined,
             category: jobCategory || undefined,
-            images: [...jobToUpdate.images, ...imageUrls]
+            images: [...jobToUpdate.images, ...imageBase64Array]
           };
 
           await updateDoc(doc(db, "completedJobs", editingJobId), {
@@ -137,7 +191,7 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
           completedDate: new Date(jobCompletedDate),
           clientName: jobClientName || undefined,
           category: jobCategory || undefined,
-          images: imageUrls
+          images: imageBase64Array
         };
 
         const docRef = await addDoc(collection(db, "completedJobs"), newJob);
@@ -178,18 +232,7 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
       const jobToDelete = completedJobs.find(job => job.id === deletingJobId);
       
       if (jobToDelete) {
-        // Delete images from storage
-        for (const imageUrl of jobToDelete.images) {
-          try {
-            const imageRef = ref(storage, imageUrl);
-            await deleteObject(imageRef);
-          } catch (error) {
-            console.error("Error deleting image:", error);
-            // Continue with deletion even if some images fail to delete
-          }
-        }
-        
-        // Delete the job document
+        // Delete the job document from Firestore
         await deleteDoc(doc(db, "completedJobs", deletingJobId));
         
         // Update state
@@ -289,6 +332,10 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
                   />
                   <ImagePlus className="h-5 w-5" />
                 </div>
+                <p className="text-sm text-muted-foreground mt-1 flex items-center">
+                  <AlertCircle className="h-3 w-3 mr-1" />
+                  Maximum file size: 2MB per image
+                </p>
               </div>
               
               {/* Display selected images for upload */}
@@ -450,6 +497,10 @@ export default function ManageCompletedJobs({ completedJobs, setCompletedJobs }:
                               />
                               <ImagePlus className="h-5 w-5" />
                             </div>
+                            <p className="text-sm text-muted-foreground mt-1 flex items-center">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Maximum file size: 2MB per image
+                            </p>
                           </div>
                           
                           {/* Display newly selected images */}

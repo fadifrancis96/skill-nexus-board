@@ -1,8 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { ContractorProfile, CompletedJob } from "@/types";
 import AppLayout from "@/components/Layout/AppLayout";
 import { Card, CardContent } from "@/components/ui/card";
