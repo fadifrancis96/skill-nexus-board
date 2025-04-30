@@ -20,6 +20,8 @@ import JobOffersPage from "./pages/Jobs/JobOffersPage";
 import MyOffersPage from "./pages/Offers/MyOffersPage";
 import Unauthorized from "./pages/Unauthorized";
 import JobMapPage from "./pages/Jobs/JobMapPage";
+import ContractorProfilePage from "./pages/Contractors/ContractorProfilePage";
+import ManageProfilePage from "./pages/Contractors/ManageProfilePage";
 
 const queryClient = new QueryClient();
 
@@ -104,6 +106,24 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <JobMapPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/contractors/:id" 
+              element={
+                <ProtectedRoute>
+                  <ContractorProfilePage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/profile/manage" 
+              element={
+                <ProtectedRoute requiredRole={["contractor"]}>
+                  <ManageProfilePage />
                 </ProtectedRoute>
               } 
             />

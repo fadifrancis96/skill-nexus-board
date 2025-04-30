@@ -81,7 +81,7 @@ export default function OfferList() {
           const data = doc.data();
           return {
             id: doc.id,
-            jobId: jobId, // Add the missing jobId property
+            jobId: jobId,
             contractorId: data.contractorId,
             contractorName: data.contractorName,
             message: data.message,
@@ -220,7 +220,14 @@ export default function OfferList() {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold mb-1">{acceptedOffer.contractorName}</h3>
+                      <h3 className="font-semibold mb-1">
+                        <Link 
+                          to={`/contractors/${acceptedOffer.contractorId}`} 
+                          className="hover:underline text-primary"
+                        >
+                          {acceptedOffer.contractorName}
+                        </Link>
+                      </h3>
                       <p className="text-sm text-muted-foreground mb-2">
                         Offered: ${acceptedOffer.price} • Submitted: {new Date(acceptedOffer.createdAt).toLocaleDateString()}
                       </p>
@@ -248,7 +255,14 @@ export default function OfferList() {
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-semibold mb-1">{offer.contractorName}</h3>
+                          <h3 className="font-semibold mb-1">
+                            <Link 
+                              to={`/contractors/${offer.contractorId}`} 
+                              className="hover:underline text-primary"
+                            >
+                              {offer.contractorName}
+                            </Link>
+                          </h3>
                           <p className="text-sm text-muted-foreground mb-2">
                             Offered: ${offer.price} • Submitted: {new Date(offer.createdAt).toLocaleDateString()}
                           </p>
@@ -307,7 +321,14 @@ export default function OfferList() {
                     <CardContent className="p-6">
                       <div className="flex justify-between items-start">
                         <div>
-                          <h3 className="font-semibold mb-1">{offer.contractorName}</h3>
+                          <h3 className="font-semibold mb-1">
+                            <Link 
+                              to={`/contractors/${offer.contractorId}`} 
+                              className="hover:underline text-primary"
+                            >
+                              {offer.contractorName}
+                            </Link>
+                          </h3>
                           <p className="text-sm text-muted-foreground mb-2">
                             Offered: ${offer.price} • Submitted: {new Date(offer.createdAt).toLocaleDateString()}
                           </p>
