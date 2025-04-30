@@ -5,19 +5,21 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 export default function ManageProfilePage() {
   const { currentUserData } = useAuth();
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Make sure to show users instructions when they land on the page
     if (currentUserData?.role === 'contractor') {
       toast({
-        title: "Manage Your Profile",
-        description: "Add your details and showcase your completed projects here."
+        title: t("manageYourProfile"),
+        description: t("addYourDetailsAndShowcaseProjects")
       });
     }
-  }, [currentUserData?.role]);
+  }, [currentUserData?.role, t]);
 
   return (
     <AppLayout>
@@ -27,7 +29,7 @@ export default function ManageProfilePage() {
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
-              <p>Only contractor accounts can manage profiles.</p>
+              <p>{t("onlyContractorsCanManageProfiles")}</p>
             </CardContent>
           </Card>
         )}

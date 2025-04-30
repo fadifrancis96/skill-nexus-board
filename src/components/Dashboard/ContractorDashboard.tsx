@@ -145,6 +145,28 @@ export default function ContractorDashboard() {
         </Card>
       </div>
       
+      {/* Add Profile Management Card */}
+      <div className="mb-8">
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row justify-between items-center">
+              <div>
+                <h2 className="text-xl font-semibold mb-2">{t('manageYourProfile')}</h2>
+                <p className="text-muted-foreground">{t('showYourExperience')}</p>
+              </div>
+              <div className="mt-4 md:mt-0 space-x-2">
+                <Button variant="outline" asChild>
+                  <Link to={`/contractors/${currentUser?.uid}`}>{t('viewPublicProfile')}</Link>
+                </Button>
+                <Button asChild>
+                  <Link to="/profile/manage">{t('manageProfile')}</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-semibold">{t('recentJobs')}</h2>
