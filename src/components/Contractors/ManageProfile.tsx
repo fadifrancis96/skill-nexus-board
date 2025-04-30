@@ -107,13 +107,16 @@ export default function ManageProfile() {
       setIsUploading(true);
       setUploadProgress(0);
       
-      // Create a storage reference
-      const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
+      // Create a storage reference with a unique timestamp-based filename
+      const timestamp = new Date().getTime();
+      const storageRef = ref(storage, `profile-images/${currentUser.uid}-${timestamp}`);
       
       // Create the file metadata including the content type
       const metadata = {
         contentType: file.type,
       };
+      
+      console.log("Starting upload to Firebase Storage...");
       
       // Upload the file and metadata
       const uploadTask = uploadBytesResumable(storageRef, file, metadata);
@@ -124,23 +127,34 @@ export default function ManageProfile() {
         (snapshot) => {
           // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
           const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          console.log('Upload progress: ' + progress + '%');
           setUploadProgress(progress);
-          console.log('Upload is ' + progress + '% done');
         },
         (error) => {
           // Upload failed
           console.error("Error uploading image:", error);
+          toast({
+            title: "Upload Failed",
+            description: "There was a problem uploading your image: " + error.message,
+            variant: "destructive",
+          });
           setIsUploading(false);
           reject(error);
         },
         () => {
           // Upload completed successfully, get the download URL
+          console.log("Upload completed, getting download URL...");
           getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
             console.log('File available at', downloadURL);
             setIsUploading(false);
             resolve(downloadURL);
           }).catch((error) => {
             console.error("Error getting download URL:", error);
+            toast({
+              title: "Error",
+              description: "Failed to get download URL after upload",
+              variant: "destructive",
+            });
             setIsUploading(false);
             reject(error);
           });
@@ -175,6 +189,8 @@ export default function ManageProfile() {
             description: "Please wait while we upload your profile image"
           });
           
+          console.log("Starting profile image upload process");
+          
           // Upload image to Firebase Storage
           const imageUrl = await uploadImageToStorage(profileImage);
           
@@ -198,6 +214,7 @@ export default function ManageProfile() {
         }
       }
 
+      console.log("Saving profile to Firestore...");
       // Save to Firestore
       await setDoc(doc(db, "contractorProfiles", currentUser.uid), updatedProfile);
       
