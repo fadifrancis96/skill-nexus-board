@@ -1,8 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { db, storage } from "@/lib/firebase";
+import { db } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContractorProfile, CompletedJob } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -17,11 +15,13 @@ import ManageCompletedJobs from "./ManageCompletedJobs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
 
+// Maximum file size: 2MB (reasonable for base64 encoded images in Firestore)
+const MAX_FILE_SIZE = 2 * 1024 * 1024;
+
 export default function ManageProfile() {
   const { currentUser, currentUserData } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [profile, setProfile] = useState<ContractorProfile>({
     userId: '',
     displayName: '',
@@ -91,6 +91,22 @@ export default function ManageProfile() {
     fetchProfile();
   }, [currentUser, currentUserData]);
 
+  // Convert file to base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.readAsDataURL(file);
+      
+      fileReader.onload = () => {
+        resolve(fileReader.result as string);
+      };
+      
+      fileReader.onerror = (error) => {
+        reject(error);
+      };
+    });
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser?.uid) return;
@@ -104,43 +120,43 @@ export default function ManageProfile() {
         completedJobsCount: completedJobs.length
       };
 
-      // Only attempt to upload image if one was selected
+      // Only attempt to convert image if one was selected
       if (profileImage) {
         try {
-          setUploadingImage(true);
+          // Check file size
+          if (profileImage.size > MAX_FILE_SIZE) {
+            throw new Error("Image file size must be less than 2MB");
+          }
+          
           toast({
-            title: "Uploading image...",
-            description: "Please wait while we upload your profile image"
+            title: "Processing image...",
+            description: "Please wait while we process your profile image"
           });
           
-          const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
-          const uploadResult = await uploadBytes(storageRef, profileImage);
-          const downloadUrl = await getDownloadURL(uploadResult.ref);
+          // Convert image to base64
+          const base64Image = await convertToBase64(profileImage);
           
-          // Only update the URL if successfully uploaded
-          updatedProfile.profilePicture = downloadUrl;
-          console.log("Profile image uploaded successfully:", downloadUrl);
+          // Update profile with base64 image
+          updatedProfile.profilePicture = base64Image;
+          console.log("Profile image processed successfully");
           
-          setUploadingImage(false);
           toast({
-            title: "Image uploaded",
-            description: "Your profile image was uploaded successfully"
+            title: "Image processed",
+            description: "Your profile image was processed successfully"
           });
-        } catch (uploadError) {
-          console.error("Error uploading profile image:", uploadError);
-          setUploadingImage(false);
+        } catch (uploadError: any) {
+          console.error("Error processing profile image:", uploadError);
           toast({
-            title: "Warning",
-            description: "Failed to upload profile image, but will continue with profile update",
+            title: "Error",
+            description: uploadError.message || "Failed to process profile image",
             variant: "destructive",
           });
           
-          // Don't change the existing profile picture URL if the upload failed
-          // This prevents undefined values from being written to Firestore
+          // Continue with profile update without the image
         }
       }
 
-      // Save to Firestore - ensure we're not passing undefined values
+      // Save to Firestore
       await setDoc(doc(db, "contractorProfiles", currentUser.uid), updatedProfile);
       
       // Update local state with the saved data
@@ -155,11 +171,11 @@ export default function ManageProfile() {
       
       // Clear the file input after successful update
       setProfileImage(null);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error.message || "Failed to update profile",
         variant: "destructive",
       });
     } finally {
@@ -189,11 +205,11 @@ export default function ManageProfile() {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
-      // Check file size (5MB limit)
-      if (selectedFile.size > 5 * 1024 * 1024) {
+      // Check file size (2MB limit)
+      if (selectedFile.size > MAX_FILE_SIZE) {
         toast({
           title: "Error",
-          description: "Image file size must be less than 5MB",
+          description: "Image file size must be less than 2MB",
           variant: "destructive",
         });
         return;
@@ -210,7 +226,7 @@ export default function ManageProfile() {
       const previewUrl = URL.createObjectURL(selectedFile);
       setProfileImagePreview(previewUrl);
       
-      console.log("New image selected for upload");
+      console.log("New image selected for preview");
     }
   };
 
@@ -285,7 +301,6 @@ export default function ManageProfile() {
                           accept="image/*"
                           onChange={handleImageChange}
                           className="flex-1"
-                          disabled={uploadingImage}
                         />
                         {profileImage && (
                           <Button 
@@ -300,7 +315,7 @@ export default function ManageProfile() {
                       </div>
                       <p className="text-sm text-muted-foreground mt-1 flex items-center">
                         <AlertCircle className="h-3 w-3 mr-1" />
-                        Maximum file size: 5MB
+                        Maximum file size: 2MB
                       </p>
                     </div>
                   </div>
@@ -388,10 +403,10 @@ export default function ManageProfile() {
                 
                 <Button 
                   type="submit" 
-                  disabled={saving || uploadingImage} 
+                  disabled={saving} 
                   className="w-full sm:w-auto"
                 >
-                  {saving ? "Saving..." : uploadingImage ? "Uploading..." : "Save Profile"}
+                  {saving ? "Saving..." : "Save Profile"}
                 </Button>
               </form>
             </CardContent>
