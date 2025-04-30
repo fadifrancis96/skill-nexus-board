@@ -1,6 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { doc, getDoc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { db, storage } from "@/lib/firebase";
 import { useAuth } from "@/contexts/AuthContext";
 import { ContractorProfile, CompletedJob } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -14,9 +16,10 @@ import { toast } from "@/hooks/use-toast";
 import ManageCompletedJobs from "./ManageCompletedJobs";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
-// Maximum file size: 2MB (reasonable for base64 encoded images in Firestore)
-const MAX_FILE_SIZE = 2 * 1024 * 1024;
+// Maximum file size: 5MB for Firebase Storage
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
 export default function ManageProfile() {
   const { currentUser, currentUserData } = useAuth();
@@ -34,6 +37,8 @@ export default function ManageProfile() {
   const [skillInput, setSkillInput] = useState("");
   const [completedJobs, setCompletedJobs] = useState<CompletedJob[]>([]);
   const [activeTab, setActiveTab] = useState("profile");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -91,19 +96,56 @@ export default function ManageProfile() {
     fetchProfile();
   }, [currentUser, currentUserData]);
 
-  // Convert file to base64
-  const convertToBase64 = (file: File): Promise<string> => {
+  // Upload image to Firebase Storage with progress monitoring
+  const uploadImageToStorage = async (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const fileReader = new FileReader();
-      fileReader.readAsDataURL(file);
+      if (!currentUser?.uid) {
+        reject(new Error("User not authenticated"));
+        return;
+      }
+
+      setIsUploading(true);
+      setUploadProgress(0);
       
-      fileReader.onload = () => {
-        resolve(fileReader.result as string);
+      // Create a storage reference
+      const storageRef = ref(storage, `profile-images/${currentUser.uid}`);
+      
+      // Create the file metadata including the content type
+      const metadata = {
+        contentType: file.type,
       };
       
-      fileReader.onerror = (error) => {
-        reject(error);
-      };
+      // Upload the file and metadata
+      const uploadTask = uploadBytesResumable(storageRef, file, metadata);
+      
+      // Listen for state changes, errors, and completion of the upload
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+          console.log('Upload is ' + progress + '% done');
+        },
+        (error) => {
+          // Upload failed
+          console.error("Error uploading image:", error);
+          setIsUploading(false);
+          reject(error);
+        },
+        () => {
+          // Upload completed successfully, get the download URL
+          getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+            console.log('File available at', downloadURL);
+            setIsUploading(false);
+            resolve(downloadURL);
+          }).catch((error) => {
+            console.error("Error getting download URL:", error);
+            setIsUploading(false);
+            reject(error);
+          });
+        }
+      );
     });
   };
 
@@ -120,35 +162,35 @@ export default function ManageProfile() {
         completedJobsCount: completedJobs.length
       };
 
-      // Only attempt to convert image if one was selected
+      // Only attempt to upload image if one was selected
       if (profileImage) {
         try {
           // Check file size
           if (profileImage.size > MAX_FILE_SIZE) {
-            throw new Error("Image file size must be less than 2MB");
+            throw new Error("Image file size must be less than 5MB");
           }
           
           toast({
-            title: "Processing image...",
-            description: "Please wait while we process your profile image"
+            title: "Uploading image...",
+            description: "Please wait while we upload your profile image"
           });
           
-          // Convert image to base64
-          const base64Image = await convertToBase64(profileImage);
+          // Upload image to Firebase Storage
+          const imageUrl = await uploadImageToStorage(profileImage);
           
-          // Update profile with base64 image
-          updatedProfile.profilePicture = base64Image;
-          console.log("Profile image processed successfully");
+          // Update profile with the image URL
+          updatedProfile.profilePicture = imageUrl;
+          console.log("Profile image uploaded successfully");
           
           toast({
-            title: "Image processed",
-            description: "Your profile image was processed successfully"
+            title: "Image uploaded",
+            description: "Your profile image was uploaded successfully"
           });
         } catch (uploadError: any) {
-          console.error("Error processing profile image:", uploadError);
+          console.error("Error uploading profile image:", uploadError);
           toast({
             title: "Error",
-            description: uploadError.message || "Failed to process profile image",
+            description: uploadError.message || "Failed to upload profile image",
             variant: "destructive",
           });
           
@@ -205,11 +247,11 @@ export default function ManageProfile() {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
-      // Check file size (2MB limit)
+      // Check file size (5MB limit)
       if (selectedFile.size > MAX_FILE_SIZE) {
         toast({
           title: "Error",
-          description: "Image file size must be less than 2MB",
+          description: "Image file size must be less than 5MB",
           variant: "destructive",
         });
         return;
@@ -237,6 +279,7 @@ export default function ManageProfile() {
     }
     setProfileImage(null);
     setProfileImagePreview(profile.profilePicture || null);
+    setUploadProgress(0);
   };
 
   // Clean up object URLs when component unmounts
@@ -301,6 +344,7 @@ export default function ManageProfile() {
                           accept="image/*"
                           onChange={handleImageChange}
                           className="flex-1"
+                          disabled={isUploading}
                         />
                         {profileImage && (
                           <Button 
@@ -308,14 +352,21 @@ export default function ManageProfile() {
                             variant="outline" 
                             onClick={handleClearImage}
                             size="sm"
+                            disabled={isUploading}
                           >
                             Clear
                           </Button>
                         )}
                       </div>
+                      {isUploading && (
+                        <div className="mt-2 space-y-1">
+                          <Progress value={uploadProgress} className="h-2" />
+                          <p className="text-xs text-muted-foreground">Uploading: {Math.round(uploadProgress)}%</p>
+                        </div>
+                      )}
                       <p className="text-sm text-muted-foreground mt-1 flex items-center">
                         <AlertCircle className="h-3 w-3 mr-1" />
-                        Maximum file size: 2MB
+                        Maximum file size: 5MB
                       </p>
                     </div>
                   </div>
@@ -403,7 +454,7 @@ export default function ManageProfile() {
                 
                 <Button 
                   type="submit" 
-                  disabled={saving} 
+                  disabled={saving || isUploading} 
                   className="w-full sm:w-auto"
                 >
                   {saving ? "Saving..." : "Save Profile"}
